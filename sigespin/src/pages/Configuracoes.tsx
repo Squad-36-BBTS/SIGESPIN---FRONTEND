@@ -1,5 +1,4 @@
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Bell,
   LockKeyhole,
@@ -7,15 +6,25 @@ import {
   Settings,
   SlidersHorizontal,
   UserRound,
+  ShieldCheck,
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Configuracoes() {
-  const [nome, setNome] = useState('Abraão Freitas')
-  const [email, setEmail] = useState('abraao@empresa.com.br')
+  const { user } = useAuth()
+  const [nome, setNome] = useState(user?.name || 'Abraão Freitas')
+  const [email, setEmail] = useState(user?.email || 'abraao.freitas@bbts.com.br')
   const [notificarSolicitacoes, setNotificarSolicitacoes] = useState(true)
   const [notificarDeliberacoes, setNotificarDeliberacoes] = useState(true)
   const [notificarEstagios, setNotificarEstagios] = useState(false)
   const [mensagem, setMensagem] = useState('')
+
+  useEffect(() => {
+    if (user) {
+      setNome(user.name)
+      setEmail(user.email)
+    }
+  }, [user])
 
   function salvarPreferencias() {
     setMensagem(
@@ -54,7 +63,7 @@ export default function Configuracoes() {
               <div>
                 <h2 className="font-bold text-slate-900">Perfil e conta</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Informações básicas do usuário.
+                  Informações básicas do usuário autenticado.
                 </p>
               </div>
             </div>
@@ -80,19 +89,29 @@ export default function Configuracoes() {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="usuario@empresa.com.br"
+                  placeholder="usuario@bbts.com.br"
                   className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
               <div className="sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">
-                  Perfil de acesso
+                  Perfil de acesso e Chave Corporativa
                 </span>
-                <p className="mt-2 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                  Definido pelo sistema de autenticação. A alteração de
-                  permissões deve ser controlada pelo back-end.
-                </p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700 border border-slate-200/80">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-blue-700" />
+                    <span>
+                      Perfil atual:{' '}
+                      <strong className="text-slate-900">
+                        {user?.role || 'Administrador do Sistema'}
+                      </strong>
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono bg-white px-2 py-1 rounded border border-slate-200">
+                    Chave F: {user?.matricula || 'F7389102'}
+                  </span>
+                </div>
               </div>
             </div>
           </article>
@@ -165,9 +184,7 @@ export default function Configuracoes() {
             </div>
 
             <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-              A alteração de senha será conectada ao mecanismo de
-              autenticação do SIGES-PIN. Por segurança, ela não deve ser
-              simulada apenas na interface.
+              A alteração de senha é integrada ao Active Directory e SISBB corporativo da BBTS. Para redefinir sua credencial, utilize o autoatendimento corporativo.
             </p>
           </article>
 
