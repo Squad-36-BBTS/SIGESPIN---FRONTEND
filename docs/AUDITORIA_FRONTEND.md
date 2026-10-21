@@ -1,83 +1,35 @@
-# Auditoria e organização do frontend
+# SIGES-PIN — auditoria pós-implementação
 
-**Atualização:** 21/10/2026. Este documento registra a organização e as verificações realizadas nesta rodada; não substitui a especificação de domínio da revisão 2.
+**Data:** 21/10/2026. Auditoria do estado após o commit PWA `0e32e2c`; as correções listadas abaixo estão no workspace e ainda não foram commitadas.
 
-## PWA (21/10/2026)
+## Relatório
 
-- Adicionado `manifest.webmanifest` com metadados de instalação e ícones PNG 192×192, 512×512 e maskable.
-- Adicionado `public/sw.js`: pré-cache do app shell, cache de recursos estáticos acessados e fallback offline para navegações SPA. Requisições `/api/` e métodos diferentes de GET não entram no cache.
-- O service worker é registrado somente em builds de produção. O botão de instalação aparece quando o navegador emite `beforeinstallprompt`.
-- O PWA precisa de HTTPS (exceto localhost) para instalação e service worker. O offline mantém a interface e os recursos estáticos já baixados; operações que dependem do backend não funcionam sem rede.
+| Área | Estado encontrado | Evidências | Correções realizadas | Testes/resultados | Pendências e dependências |
+|---|---|---|---|---|---|
+| Git e estrutura | PARCIAL | Repositório na raiz do workspace, branch `abra10`, `HEAD` alinhado a `origin/abra10`; frontend em `sigespin/`. Histórico inclui `add PWA support with offline caching`. | Nenhuma alteração destrutiva; trabalho existente preservado. | `git status`, `git log`, raiz e remoto inspecionados. | Mudanças desta auditoria ainda não commitadas. |
+| Build e rotas | CONCLUÍDO | React 18, Vite, TypeScript estrito, React Router 6. Rotas públicas e `/app/*` com proteção de sessão e perfil em `src/App.tsx`. | Nenhuma alteração nas rotas. | `npm run typecheck` e `npm run build` passaram. Preview HTTP respondeu 200 para `/`, `/login`, `/cadastro`, `/app`, `/app/portfolio`, `/app/projetos/1`, `/app/governanca` e recursos do PWA. | O preview confirmou fallback HTTP do SPA, mas sem navegador não confirmou renderização React ou interação. Hospedagem precisa reescrever rotas profundas para `index.html`. |
+| PWA: manifesto e instalação | CONCLUÍDO | `manifest.webmanifest` válido; nomes, `pt-BR`, cores, `standalone`, start URL `/` e ícones PNG 192, 512 e maskable 512. Metadados Apple no HTML. | Botão de instalação movido para a raiz da aplicação e adaptado a celulares; captura o evento cedo no ciclo da aplicação. | JSON e cabeçalhos PNG/dimensões validados; preview serviu os arquivos com 200. | O botão depende de `beforeinstallprompt`, evento não padronizado e disponível principalmente em Chromium; Safari/iOS requer instalação pelo menu do navegador. [MDN: evento `beforeinstallprompt`](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event). |
+| PWA: cache, privacidade e atualização | PARCIAL | Service worker registrado somente em produção; cache do app shell, fallback de navegação SPA e cache runtime de assets locais. | Restringido o cache runtime a `/assets/`, `/icons/`, favicon e manifesto, bloqueando respostas `fetch`/XHR independentemente do caminho de API. Cache versionado para `v2`; atualização espera os clientes antigos fecharem antes de ativar e remover caches antigos. | `node --check public/sw.js` passou; build inclui `sw.js`, manifesto e ícones. | Não houve simulação offline real em navegador. Sem conexão, o shell e os assets previamente baixados podem abrir; chunks de rotas nunca visitadas, imagens externas, chamadas de API, login, upload e mutações não são garantidos. Não é modo offline completo. Atualização pendente só ativa quando a versão antiga não tiver clientes abertos. Incrementar a versão do cache nas próximas mudanças da estratégia. Service workers exigem HTTPS, exceto localhost. [MDN: Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API). |
+| Dashboard e indicadores | PARCIAL | Cards, gráficos da jornada, origem, radar e fila contextual alimentados pelo serviço de métricas. | Estados de erro/retry agora aparecem também para pauta e atualizações recentes, que antes podiam manter skeleton indefinidamente. | Typecheck e build passaram. | Dependem de dados da API ou mock. Não há tela exportável de relatórios. |
+| Intake Inteligente | PARCIAL | Formulário de demanda espontânea/induzida e análise assistida; serviço de IA no backend é apenas proposto e no mock é simulado. | Nenhuma mudança funcional neste módulo. | Revisão de código e compilação. | Integração com IA e persistência reais dependem do backend/serviço confirmado. |
+| Portfólio e Kanban | CONCLUÍDO | Lista com filtros/paginação e Kanban das etapas da jornada; dados vêm do serviço mock/API. | Nenhuma mudança funcional neste módulo. | Rota respondeu no preview; compilação passou. | Não houve teste visual/interativo em navegador. |
+| Triagem | CONCLUÍDO | Fila, assumir demanda, qualificação, consulta e encaminhamento conforme revisão 2; mock verifica perfil e regras principais. | Nenhuma mudança funcional neste módulo. | Revisão de código e compilação. | A autorização real precisa ser imposta pela API também. |
+| Pareceres | CONCLUÍDO | Consulta técnica e resposta por especialista, via serviços existentes. | Nenhuma mudança funcional neste módulo. | Revisão de código e compilação. | Persistência, notificações e autorização dependem do backend. |
+| Governança | PARCIAL | Pauta, decisões e deliberações com alçada no frontend. | Erros de projetos e decisões recentes agora mostram mensagem/retry, em vez de skeleton sem explicação. | Typecheck e build passaram. | Backend deve validar alçada e regras de decisão; interface não é fronteira de segurança. |
+| Radar TRL e maturidade | CONCLUÍDO | Régua TRL 1–9, visualização radar e atualização por modal com justificativa/evidências no domínio mockado. | Nenhuma mudança funcional neste módulo. | Revisão de código e compilação. | Upload real e validação dos arquivos dependem do backend; renderização de gráfico não foi observada em navegador. |
+| Experimentação, MVP e entregas | PARCIAL | Marcos, registro de entregas e validação pelo demandante estão no detalhe do projeto. | Nenhuma mudança funcional neste módulo. | Revisão de código e compilação. | Downloads aparecem explicitamente desabilitados enquanto não houver endpoint. Fluxo depende de API real para uso corporativo. |
+| Open Innovation | PENDENTE | Não há rota/módulo independente. Campanhas incluem desafio, hackathon e residência como modalidades de demanda induzida. | Nenhuma. | Rota não existente confirmada no inventário. | Definir se campanhas cobrem o escopo ou se é necessária área dedicada; depende de decisão de produto. |
+| Relatórios | PENDENTE | Há gráficos e KPIs no Dashboard, sem página/rota de relatórios ou exportação dedicada. | Nenhuma. | Inventário de rotas e páginas. | Definir indicadores, filtros e exportações com negócio. |
+| Login, sessão, perfis e APIs | PARCIAL | Login/logout; token e usuário em `localStorage`; interceptador Axios envia JWT e redireciona a login em 401. Rotas e ações têm guardas visuais. Modo padrão `VITE_USE_MOCK=true`. | Nenhuma mudança de autenticação. | Revisão de `AuthContext`, `services/api.ts`, rotas e services. | Não há refresh/expiração local do token; sessão real depende de 401/backend. `localStorage` não substitui cookie seguro nem autorização do servidor. Rotas/DTOs em `services/index.ts` ainda são propostas. |
+| UX, responsividade e acessibilidade | PARCIAL | Breakpoints Tailwind, tabelas/Kanban com rolagem horizontal, labels e estados assíncronos em várias páginas. | Botão de instalação disponível em viewport estreita. | Revisão estática das classes e elementos; não foi possível executar browser automation nem conferir dimensões reais. | Verificar celular/tablet/desktop, teclado, leitores de tela, contraste e gráficos em browser. |
+| Qualidade e testes | PARCIAL | Scripts disponíveis: `dev`, `build`, `preview`, `typecheck`. Sem lint, test runner ou Playwright/Puppeteer instalados. | Erros de API visíveis corrigidos no Dashboard, Governança e Minhas demandas. | `npm run typecheck`, `npm run build`, `node --check public/sw.js`, validação do manifesto/ícones, preview HTTP e `git diff --check` passaram. | Sem testes automatizados ou teste de interação real. |
 
-## Estado encontrado
+## Estado do Git
 
-- A aplicação React 18, Vite e TypeScript está em `sigespin/`, a raiz da aplicação. O repositório Git fica na pasta que contém `sigespin/` e `docs/`; portanto, `sigespin/` é a raiz do frontend, mas não a raiz Git. A cópia da origem continua preservada conforme registrado na auditoria inicial; nenhuma pasta foi movida ou excluída nesta revisão.
-- A cópia foi instalada a partir do lockfile com `npm ci`. O `package-lock.json` foi mantido; não foram adicionadas dependências ao projeto.
-- O `.gitignore` da raiz organizada cobre `node_modules/`, `dist/`, `.env`, arquivos `*.local` e `*.tsbuildinfo`, além de `.claude/`. O `.env.example` contém nomes e valores padrão não secretos.
-- O README passou a instruir `npm ci`, `npm run typecheck` e `npm run build`; também esclarece que as rotas descritas para o backend ainda precisam de confirmação e aponta para esta auditoria.
-- Esta auditoria foi criada para reunir diagnóstico, prioridades, ações realizadas, validação, limitações e próximos passos. A documentação de domínio existente foi preservada sem alterar as decisões funcionais da revisão 2.
-- O projeto usa React Router, Tailwind, Lucide, Axios e serviços mockados. As telas e rotas da revisão 2 estão presentes: dashboard, portfólio, campanhas, intake, triagem, pareceres, governança, demandas do usuário e perfil.
-- A revisão 2 em `RELATORIO_MUDANCAS.md` é a especificação vigente. `PROPOSTA_FRONTEND.md` contém trechos da versão anterior e já declara que foi substituída em parte.
-- O modo padrão é demonstração (`VITE_USE_MOCK=true`). O backend e os contratos das rotas propostas não estão presentes neste workspace; portanto, integração real não foi confirmada.
-- Os scripts disponíveis são `dev`, `build`, `preview` e `typecheck`; não há scripts de lint ou testes no `package.json`.
+No início da auditoria, `HEAD` era `0e32e2c` (`add PWA support with offline caching`), branch `abra10`, acompanhando `origin/abra10`; não havia mudanças locais. Durante esta auditoria foram alterados `public/sw.js`, `src/main.tsx`, `src/components/common/PwaInstallButton.tsx`, `src/components/layout/AppLayout.tsx`, `src/pages/app/DashboardPage.tsx`, `src/pages/app/GovernancaPage.tsx`, `src/pages/app/MinhasDemandasPage.tsx` e este relatório. Não houve commit, push ou operação destrutiva.
 
-## Priorização
+## Próximas prioridades
 
-| Prioridade | Achado | Situação |
-|---|---|---|
-| Crítico | A raiz solicitada `sigespin/` não existia; havia uma pasta duplicada com outro nome. | Conteúdo copiado para a raiz `sigespin/`; origem preservada devido a bloqueio de movimentação. |
-| Alto | A auditoria inicial não conseguiu consultar Git. | Rechecado em 20/10/2026: repositório na raiz do workspace, branch `abra10`, árvore limpa e remoto `origin` configurado para `Squad-36-BBTS/SIGESPIN---FRONTEND`. |
-| Médio | README usava `npm install` e descrevia integração de forma mais conclusiva que os contratos disponíveis. | Atualizado para `npm ci`, typecheck, variáveis e ressalva de contrato proposto. |
-| Médio | Não há testes automatizados configurados. | Registrado; não foram inventados testes nem adicionada infraestrutura de teste. |
-| Baixo | Há referências a imagens remotas do Unsplash. | Documentado como dependência existente; nenhuma substituição visual foi feita. |
-
-## Alterações feitas nesta rodada
-
-- Criada a raiz de trabalho `sigespin/` com `src/`, `public/`, `docs/`, manifests e configurações originais do frontend.
-- Preservados `package.json`, `package-lock.json`, configuração do Vite, TypeScript, Tailwind, PostCSS, assets, páginas, serviços, tipos e documentação existente.
-- Não movi nem apaguei a pasta fonte, não inicializei Git e não alterei fluxos de negócio ou endpoints. A cópia evita risco de perda enquanto a origem permanecer bloqueada pelo ambiente.
-- Atualizado `README.md` com comandos reprodutíveis, ressalva sobre contratos da API e link para a auditoria.
-- Criado este relatório com as prioridades, o resultado das validações, limitações e instruções para execução e revisão Git.
-- Nesta revisão, corrigido este relatório para refletir o repositório Git atualmente acessível e os scripts realmente disponíveis. Nenhum código funcional foi alterado.
-- Implementado suporte PWA: manifesto, ícones, cache offline, registro de service worker e ação de instalação; README atualizado.
-
-## Organização em `sigespin/`
-
-```text
-sigespin/
-├── public/
-├── src/
-│   ├── components/  ├── contexts/  ├── hooks/  ├── pages/
-│   ├── services/    ├── types/     └── utils/
-├── docs/
-├── package.json
-├── package-lock.json
-├── index.html
-├── vite.config.ts
-├── tsconfig.json
-├── tailwind.config.js
-├── postcss.config.js
-├── .gitignore
-└── README.md
-```
-
-`node_modules/` e `dist/` não fazem parte do versionamento; o `.gitignore` os exclui junto de `.env` e arquivos locais. `.env.example` contém somente valores ilustrativos não secretos.
-
-## Validação executada
-
-- `npm ci`: concluído, 165 pacotes instalados a partir do lockfile.
-- `npm run typecheck`: concluído sem erros.
-- `npm run typecheck`: concluído sem erros nesta revisão.
-- `npm run build`: primeira tentativa no sandbox falhou ao acessar `../../..` durante o carregamento do Vite config; repetido fora do sandbox com autorização e concluído com sucesso. Vite transformou 1.670 módulos e gerou `dist/`.
-- Após a implementação PWA, `npm run typecheck` passou e `npm run build` passou (1.671 módulos transformados; saída inclui manifesto, ícones e service worker).
-- Lint e testes: não há scripts configurados; não executados.
-- Revisão de navegação: as rotas declaradas em `App.tsx` correspondem às telas listadas no README; os caminhos legados redirecionam para as telas atuais. O fluxo mockado implementa restrições de papel, evidências para maturidade, validação do demandante para conclusão e alçada de governança.
-- Referência Stitch: não foi acessada nesta execução; fidelidade visual não foi atestada.
-
-## Git e próximos passos
-
-O repositório Git está na raiz do workspace (`C:/Users/Abraão Freitas/Downloads/SIGESPIN---FRONTEND-kau`), na branch `abra10`, com árvore limpa na verificação de 20/10/2026. O remoto `origin` aponta para `https://github.com/Squad-36-BBTS/SIGESPIN---FRONTEND.git`. Não foram feitos commits, pushes nem alterações Git. A aplicação fica em `sigespin/`; revise `git status` e o diff antes de publicar.
-
-Para executar: abra a pasta `sigespin` no VS Code, rode `npm ci`, depois `npm run dev`. Para validar: `npm run typecheck` e `npm run build`. Configure `VITE_USE_MOCK=false` somente quando os DTOs, rotas e autorização tiverem sido confirmados com o backend.
-
-Pendências que dependem de validação externa: contratos e autorização do backend e inspeção comparativa da referência Stitch. A responsividade e o comportamento visual foram revisados pelo código, mas não verificados em navegador ou em resoluções específicas nesta revisão. O sistema não contém testes automatizados nem scripts de lint.
+1. Confirmar com o backend os contratos, autenticação, autorização por alçada e upload/download de evidências; validar cada chamada num ambiente integrado.
+2. Fazer teste de instalação, atualização, navegação profunda e perda/restauração de conexão em Chromium Android/desktop e Safari iOS; decidir se chunks de rotas devem ser pré-cacheados.
+3. Definir se Open Innovation precisa de módulo próprio e quais relatórios/exportações o negócio exige; então validar UI responsiva e acessibilidade em browser.

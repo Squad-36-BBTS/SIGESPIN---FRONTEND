@@ -33,8 +33,14 @@ export function PwaInstallButton() {
   };
 
   return (
-    <button type="button" onClick={install} className="btn-secondary hidden sm:inline-flex" aria-label="Instalar SIGES-PIN neste dispositivo">
-      <Download className="h-4 w-4" aria-hidden="true" /> Instalar aplicativo
+    <button
+      type="button"
+      onClick={install}
+      className="btn-secondary fixed bottom-4 right-4 z-50 h-11 w-11 px-0 shadow-float sm:h-10 sm:w-auto sm:px-4"
+      aria-label="Instalar SIGES-PIN neste dispositivo"
+      title="Instalar aplicativo"
+    >
+      <Download className="h-4 w-4" aria-hidden="true" /> <span className="sr-only sm:not-sr-only">Instalar aplicativo</span>
     </button>
   );
 }

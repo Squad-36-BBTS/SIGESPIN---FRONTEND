@@ -223,7 +223,9 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="mt-4 divide-y divide-bb-line">
-            {!pautas.dados ? (
+            {pautas.erro ? (
+              <Erro texto={pautas.erro} onTentar={pautas.recarregar} />
+            ) : !pautas.dados ? (
               <Skeleton className="h-40" />
             ) : pautas.dados.length === 0 ? (
               <p className="py-8 text-center text-sm text-bb-muted">Nenhum item na pauta.</p>
@@ -255,9 +257,12 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {!recentes.dados
-            ? Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-32" />)
-            : recentes.dados.itens.map((p) => (
+          {recentes.erro ? (
+            <Erro texto={recentes.erro} onTentar={recentes.recarregar} />
+          ) : !recentes.dados ? (
+            Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-32" />)
+          ) : (
+            recentes.dados.itens.map((p) => (
                 <Link key={p.id} to={`/app/projetos/${p.id}`} className="card card-hover flex flex-col gap-2 p-4">
                   <div className="flex flex-wrap gap-1">
                     <EtapaBadge etapa={p.etapa} />
@@ -269,7 +274,8 @@ export default function DashboardPage() {
                     <ArenaBadge arena={p.arena} />
                   </div>
                 </Link>
-              ))}
+              ))
+          )}
         </div>
       </section>
     </div>

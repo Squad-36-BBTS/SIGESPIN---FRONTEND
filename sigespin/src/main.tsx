@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
+import { PwaInstallButton } from './components/common/PwaInstallButton';
 import './index.css';
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <App />
         <Toaster position="top-center" richColors closeButton toastOptions={{ style: { fontFamily: 'inherit' } }} />
+        <PwaInstallButton />
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

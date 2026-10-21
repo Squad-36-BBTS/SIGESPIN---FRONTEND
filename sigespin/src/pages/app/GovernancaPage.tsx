@@ -35,6 +35,7 @@ export default function GovernancaPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <div>
           {pautas.erro && <Erro texto={pautas.erro} onTentar={pautas.recarregar} />}
+          {projetos.erro && <Erro texto={projetos.erro} onTentar={recarregar} />}
           {!pautas.dados || !projetos.dados ? (
             <Skeleton className="h-64" />
           ) : pautas.dados.length === 0 ? (
@@ -91,7 +92,9 @@ export default function GovernancaPage() {
         </div>
         <aside className="card h-fit p-5">
           <h2 className="font-bold">Decisões recentes</h2>
-          {!recentes.dados ? (
+          {recentes.erro ? (
+            <Erro texto={recentes.erro} onTentar={recentes.recarregar} />
+          ) : !recentes.dados ? (
             <Skeleton className="mt-4 h-40" />
           ) : (
             <ul className="mt-3 divide-y divide-bb-line">

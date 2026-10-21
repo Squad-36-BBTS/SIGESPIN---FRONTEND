@@ -1,12 +1,11 @@
 const CACHE_PREFIX = 'sigespin-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting()),
+      .then((cache) => cache.addAll(APP_SHELL)),
   );
 });
 
@@ -40,7 +39,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache static same-origin assets after first use; hashed Vite assets stay available offline.
+  // Limit runtime caching to public build assets. Fetch/XHR responses (including APIs
+  // deployed outside /api) have an empty destination and are never stored here.
+  const isPublicAsset = ['/assets/', '/icons/'].some((prefix) => url.pathname.startsWith(prefix))
+    || url.pathname === '/favicon.svg'
+    || url.pathname === '/manifest.webmanifest';
+  if (!isPublicAsset) return;
+
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;

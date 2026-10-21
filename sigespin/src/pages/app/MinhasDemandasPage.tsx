@@ -2,7 +2,7 @@ import { CheckCircle2, MessageSquareWarning, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { ArenaBadge, EtapaBadge, OrigemBadge, PageHeader, Skeleton, TrlMeter, Vazio } from '@/components/common/ui';
+import { ArenaBadge, Erro, EtapaBadge, OrigemBadge, PageHeader, Skeleton, TrlMeter, Vazio } from '@/components/common/ui';
 import { ValidacaoModal } from '@/components/projeto/modais';
 import { useAsync, useAuth } from '@/hooks';
 import { entregaService, projetoService } from '@/services';
@@ -33,6 +33,7 @@ export default function MinhasDemandasPage() {
         }
       />
 
+      {entregas.erro && <div className="mb-6"><Erro texto={entregas.erro} onTentar={entregas.recarregar} /></div>}
       {(entregas.dados?.length ?? 0) > 0 && (
         <section className="mb-6">
           <h2 className="mb-3 flex items-center gap-2 font-bold">
@@ -69,7 +70,9 @@ export default function MinhasDemandasPage() {
         </div>
       )}
 
-      {!projetos.dados ? (
+      {projetos.erro ? (
+        <Erro texto={projetos.erro} onTentar={projetos.recarregar} />
+      ) : !projetos.dados ? (
         <Skeleton className="h-64" />
       ) : minhas.length === 0 ? (
         <Vazio titulo="Você ainda não registrou demandas" texto="Registre um problema, uma necessidade ou uma oportunidade, ou participe de uma campanha aberta." />
