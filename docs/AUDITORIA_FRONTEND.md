@@ -1,10 +1,17 @@
 # Auditoria e organização do frontend
 
-**Atualização:** 19/10/2026. Este documento registra a organização e as verificações realizadas nesta rodada; não substitui a especificação de domínio da revisão 2.
+**Atualização:** 21/10/2026. Este documento registra a organização e as verificações realizadas nesta rodada; não substitui a especificação de domínio da revisão 2.
+
+## PWA (21/10/2026)
+
+- Adicionado `manifest.webmanifest` com metadados de instalação e ícones PNG 192×192, 512×512 e maskable.
+- Adicionado `public/sw.js`: pré-cache do app shell, cache de recursos estáticos acessados e fallback offline para navegações SPA. Requisições `/api/` e métodos diferentes de GET não entram no cache.
+- O service worker é registrado somente em builds de produção. O botão de instalação aparece quando o navegador emite `beforeinstallprompt`.
+- O PWA precisa de HTTPS (exceto localhost) para instalação e service worker. O offline mantém a interface e os recursos estáticos já baixados; operações que dependem do backend não funcionam sem rede.
 
 ## Estado encontrado
 
-- A aplicação React 18, Vite e TypeScript estava em uma pasta aninhada `SIGESPIN---FRONTEND-kau` dentro do workspace. O conteúdo necessário do frontend foi copiado para `sigespin/`, que agora é a raiz organizada para abrir e versionar. A pasta de origem foi mantida intacta porque o ambiente bloqueou sua renomeação; ela é uma cópia redundante fora da raiz indicada. `node_modules/` e `dist/` não foram copiados.
+- A aplicação React 18, Vite e TypeScript está em `sigespin/`, a raiz da aplicação. O repositório Git fica na pasta que contém `sigespin/` e `docs/`; portanto, `sigespin/` é a raiz do frontend, mas não a raiz Git. A cópia da origem continua preservada conforme registrado na auditoria inicial; nenhuma pasta foi movida ou excluída nesta revisão.
 - A cópia foi instalada a partir do lockfile com `npm ci`. O `package-lock.json` foi mantido; não foram adicionadas dependências ao projeto.
 - O `.gitignore` da raiz organizada cobre `node_modules/`, `dist/`, `.env`, arquivos `*.local` e `*.tsbuildinfo`, além de `.claude/`. O `.env.example` contém nomes e valores padrão não secretos.
 - O README passou a instruir `npm ci`, `npm run typecheck` e `npm run build`; também esclarece que as rotas descritas para o backend ainda precisam de confirmação e aponta para esta auditoria.
@@ -12,14 +19,14 @@
 - O projeto usa React Router, Tailwind, Lucide, Axios e serviços mockados. As telas e rotas da revisão 2 estão presentes: dashboard, portfólio, campanhas, intake, triagem, pareceres, governança, demandas do usuário e perfil.
 - A revisão 2 em `RELATORIO_MUDANCAS.md` é a especificação vigente. `PROPOSTA_FRONTEND.md` contém trechos da versão anterior e já declara que foi substituída em parte.
 - O modo padrão é demonstração (`VITE_USE_MOCK=true`). O backend e os contratos das rotas propostas não estão presentes neste workspace; portanto, integração real não foi confirmada.
-- Não há suíte de testes configurada no `package.json`.
+- Os scripts disponíveis são `dev`, `build`, `preview` e `typecheck`; não há scripts de lint ou testes no `package.json`.
 
 ## Priorização
 
 | Prioridade | Achado | Situação |
 |---|---|---|
 | Crítico | A raiz solicitada `sigespin/` não existia; havia uma pasta duplicada com outro nome. | Conteúdo copiado para a raiz `sigespin/`; origem preservada devido a bloqueio de movimentação. |
-| Alto | Git não pôde informar status, branch, raiz ou remoto. Não há `.git` visível no workspace nem na pasta original. O ambiente injeta `safe.directory=C:\Users\Abraão Freitas`, e o Git falha tentando mudar para esse caminho. | Não inicializado nem alterado; requer abrir o diretório correto em um clone/repositório Git para preparar publicação. |
+| Alto | A auditoria inicial não conseguiu consultar Git. | Rechecado em 20/10/2026: repositório na raiz do workspace, branch `abra10`, árvore limpa e remoto `origin` configurado para `Squad-36-BBTS/SIGESPIN---FRONTEND`. |
 | Médio | README usava `npm install` e descrevia integração de forma mais conclusiva que os contratos disponíveis. | Atualizado para `npm ci`, typecheck, variáveis e ressalva de contrato proposto. |
 | Médio | Não há testes automatizados configurados. | Registrado; não foram inventados testes nem adicionada infraestrutura de teste. |
 | Baixo | Há referências a imagens remotas do Unsplash. | Documentado como dependência existente; nenhuma substituição visual foi feita. |
@@ -31,6 +38,8 @@
 - Não movi nem apaguei a pasta fonte, não inicializei Git e não alterei fluxos de negócio ou endpoints. A cópia evita risco de perda enquanto a origem permanecer bloqueada pelo ambiente.
 - Atualizado `README.md` com comandos reprodutíveis, ressalva sobre contratos da API e link para a auditoria.
 - Criado este relatório com as prioridades, o resultado das validações, limitações e instruções para execução e revisão Git.
+- Nesta revisão, corrigido este relatório para refletir o repositório Git atualmente acessível e os scripts realmente disponíveis. Nenhum código funcional foi alterado.
+- Implementado suporte PWA: manifesto, ícones, cache offline, registro de service worker e ação de instalação; README atualizado.
 
 ## Organização em `sigespin/`
 
@@ -58,16 +67,17 @@ sigespin/
 
 - `npm ci`: concluído, 165 pacotes instalados a partir do lockfile.
 - `npm run typecheck`: concluído sem erros.
-- `npm run build`: concluído fora do sandbox; Vite transformou 1.670 módulos e gerou `dist/`. Dentro do sandbox, o esbuild recebeu acesso negado ao diretório pai ao carregar o config, então a execução foi repetida com acesso aprovado e passou.
-- A primeira tentativa de build dentro do sandbox falhou por restrição de acesso a `../../..` ao carregar o config Vite; o mesmo build, repetido com acesso aprovado fora do sandbox, concluiu com sucesso. Não foi necessário alterar a configuração de build.
-- Testes: não existe script de testes configurado.
+- `npm run typecheck`: concluído sem erros nesta revisão.
+- `npm run build`: primeira tentativa no sandbox falhou ao acessar `../../..` durante o carregamento do Vite config; repetido fora do sandbox com autorização e concluído com sucesso. Vite transformou 1.670 módulos e gerou `dist/`.
+- Após a implementação PWA, `npm run typecheck` passou e `npm run build` passou (1.671 módulos transformados; saída inclui manifesto, ícones e service worker).
+- Lint e testes: não há scripts configurados; não executados.
 - Revisão de navegação: as rotas declaradas em `App.tsx` correspondem às telas listadas no README; os caminhos legados redirecionam para as telas atuais. O fluxo mockado implementa restrições de papel, evidências para maturidade, validação do demandante para conclusão e alçada de governança.
 - Referência Stitch: não foi acessada nesta execução; fidelidade visual não foi atestada.
 
 ## Git e próximos passos
 
-Não foi possível verificar branch, diff ou remotos porque esta pasta não contém metadados `.git` acessíveis e o ambiente falha ao resolver o caminho configurado como diretório seguro. Nenhum commit, push, reset ou inicialização Git foi realizado. Antes de publicar, abra `sigespin/` dentro do clone correto, confira `git status`, branch e remoto e revise os arquivos copiados.
+O repositório Git está na raiz do workspace (`C:/Users/Abraão Freitas/Downloads/SIGESPIN---FRONTEND-kau`), na branch `abra10`, com árvore limpa na verificação de 20/10/2026. O remoto `origin` aponta para `https://github.com/Squad-36-BBTS/SIGESPIN---FRONTEND.git`. Não foram feitos commits, pushes nem alterações Git. A aplicação fica em `sigespin/`; revise `git status` e o diff antes de publicar.
 
 Para executar: abra a pasta `sigespin` no VS Code, rode `npm ci`, depois `npm run dev`. Para validar: `npm run typecheck` e `npm run build`. Configure `VITE_USE_MOCK=false` somente quando os DTOs, rotas e autorização tiverem sido confirmados com o backend.
 
-Pendências que dependem de validação externa: contratos e autorização do backend, inspeção comparativa da referência Stitch e configuração da raiz Git/remoto apropriados.
+Pendências que dependem de validação externa: contratos e autorização do backend e inspeção comparativa da referência Stitch. A responsividade e o comportamento visual foram revisados pelo código, mas não verificados em navegador ou em resoluções específicas nesta revisão. O sistema não contém testes automatizados nem scripts de lint.

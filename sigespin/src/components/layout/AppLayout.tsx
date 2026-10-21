@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { Avatar, Logo } from '@/components/common/ui';
+import { PwaInstallButton } from '@/components/common/PwaInstallButton';
 import { useAuth } from '@/hooks';
 import { dashboardService, entregaService, parecerService } from '@/services';
 import { USE_MOCK } from '@/services/api';
@@ -130,6 +131,7 @@ export function AppLayout() {
             </span>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <PwaInstallButton />
             {temPerfil('DEMANDANTE') && (
               <Link to="/app/demandas/nova" className="btn-accent hidden sm:inline-flex">
                 <Plus className="h-4 w-4" /> Nova demanda

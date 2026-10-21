@@ -16,6 +16,8 @@ Por padrão o app roda em **modo demonstração** (`VITE_USE_MOCK=true` no `.env
 aplica as regras da revisão 2 (docs/RELATORIO_MUDANCAS.md). Na tela de login há atalhos para os três perfis e para usuários com alçada de governança
 (senha dos usuários de teste em `src/services/mock/seed.ts`). Em "Meu perfil" é possível restaurar os dados.
 
+O frontend também é um PWA: em produção, abra o sistema por HTTPS (ou localhost), aguarde o carregamento inicial e use **Instalar aplicativo** quando o navegador oferecer a instalação. O app shell e os recursos estáticos já visitados ficam disponíveis offline; chamadas à API não são armazenadas e precisam de conexão.
+
 Para apontar ao back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false` e `VITE_API_BASE_URL=/api`. As rotas em `src/services/index.ts` são propostas pela revisão 2 e ainda precisam ser confirmadas com o backend; essa configuração, por si só, não comprova integração funcional.
 
 ## Telas
