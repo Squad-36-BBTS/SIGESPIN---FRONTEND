@@ -1,9 +1,10 @@
-import { Check, MessageSquarePlus } from 'lucide-react';
+import { Check, FilePen, MessageSquarePlus } from 'lucide-react';
 
 import type { Entrega } from '@/types/domain';
 import { negado, noProjeto, visivelPara } from '@/utils/permissoes';
 
 import type { AcaoProjeto, ModalProjetoProps } from '../tipos';
+import { CorrecaoModal } from './CorrecaoModal';
 import { ValidacaoModal } from './ValidacaoModal';
 
 function ModalValidacao({ projeto, alvo, onFechar, onFeito }: ModalProjetoProps) {
@@ -11,17 +12,17 @@ function ModalValidacao({ projeto, alvo, onFechar, onFeito }: ModalProjetoProps)
   return <ValidacaoModal entrega={e && { ...e, projetoTitulo: projeto.titulo }} onFechar={onFechar} onFeito={onFeito} />;
 }
 
-// Demandante: validar entregas/MVPs e adicionar contexto durante a evolução da demanda
+// Demandante responsável: validar entregas, registrar correções e adicionar contexto
 const acoes: AcaoProjeto[] = [
   {
     id: 'validarEntrega',
     ordem: 80,
     botao: ({ p, usuario }) => {
-      if (!visivelPara('validarEntrega', usuario.perfil)) return null;
+      if (!visivelPara('validarEntrega', usuario.perfil) || !p.entregas.length) return null;
       const perm = noProjeto('validarEntrega', usuario, p);
-      const aValidar = p.entregas.find((e) => !e.validacao);
+      const aValidar = p.entregas.find((e) => !e.validacoes.length);
       return {
-        perm: perm.permitido && !aValidar ? negado('Não há entrega aguardando a sua validação.') : perm,
+        perm: perm.permitido && !aValidar ? negado('Não há entrega aguardando a primeira validação. Para uma nova manifestação, use a aba Entregas.') : perm,
         rotulo: 'Validar entrega',
         icon: <Check className="h-4 w-4" />,
         primaria: !!aValidar && perm.permitido,
@@ -29,6 +30,13 @@ const acoes: AcaoProjeto[] = [
       };
     },
     Modal: ModalValidacao,
+  },
+  {
+    id: 'registrarCorrecao',
+    ordem: 85,
+    botao: ({ p, usuario }) =>
+      visivelPara('registrarCorrecao', usuario.perfil) ? { perm: noProjeto('registrarCorrecao', usuario, p), rotulo: 'Registrar correção', icon: <FilePen className="h-4 w-4" /> } : null,
+    Modal: CorrecaoModal,
   },
   {
     id: 'adicionarContexto',

@@ -2,12 +2,15 @@ import type {
   AreaDemandante,
   ArenaTipo,
   EstadoTarefa,
-  NaturezaDemanda,
   OrigemDemanda,
   PerfilUsuario,
   ResultadoValidacao,
-  StatusSolicitacao,
+  StatusGovernanca,
+  StatusRecomendacao,
   TipoCampanha,
+  TipoGestao,
+  TipoProposta,
+  TipoTerminal,
   Usuario,
 } from '@/types/domain';
 
@@ -18,22 +21,18 @@ export const PERFIL_LABEL: Record<PerfilUsuario, string> = {
 };
 
 export const PERFIL_DESCRICAO: Record<PerfilUsuario, string> = {
-  DEMANDANTE: 'Dono do problema: registra a demanda, participa da jornada e valida entregas e MVPs.',
-  ANALISTA: 'Faz a triagem e a qualificação, coordena a evolução e atualiza o TRL com base em evidências.',
-  ESPECIALISTA: 'Emite pareceres técnicos e decide as transições do Kanban que exigem governança.',
+  DEMANDANTE: 'Cadastra demandas, acompanha o portfólio, registra correções e valida entregas quando é o responsável pelo projeto. Responde a recomendações destinadas a ele.',
+  ANALISTA: 'Qualifica demandas, encaminha consultas, registra TRL, movimenta em percurso livre, solicita governança, submete entregas, recomenda demandas e propõe alterações no quadro.',
+  ESPECIALISTA: 'Emite parecer, registra TRL, movimenta projetos, decide pedidos, submete entregas, recomenda demandas, administra o quadro e atualiza ou arquiva projetos.',
 };
 
 export function rotuloUsuario(u: Pick<Usuario, 'perfil' | 'areaTecnica'>): string {
   return u.perfil === 'ESPECIALISTA' && u.areaTecnica ? `Especialista · ${u.areaTecnica}` : PERFIL_LABEL[u.perfil];
 }
 
-// Consulta direcionada à pessoa, ou aberta para a área técnica do especialista
-export function podeResponderConsulta(
-  c: { especialista: { id: number } | null; areaTecnica: string; status: string },
-  u: Pick<Usuario, 'id' | 'perfil' | 'areaTecnica'> | null | undefined,
-): boolean {
-  if (!u || u.perfil !== 'ESPECIALISTA' || c.status !== 'PENDENTE') return false;
-  return c.especialista ? c.especialista.id === u.id : c.areaTecnica === u.areaTecnica;
+// A consulta é dirigida a um Especialista; só ele responde, enquanto estiver pendente
+export function podeResponderConsulta(c: { especialista: { id: number }; status: string }, u: Pick<Usuario, 'id' | 'perfil'> | null | undefined): boolean {
+  return !!u && u.perfil === 'ESPECIALISTA' && c.status === 'PENDENTE' && c.especialista.id === u.id;
 }
 
 export const ORIGEM_LABEL: Record<OrigemDemanda, string> = {
@@ -44,12 +43,6 @@ export const ORIGEM_LABEL: Record<OrigemDemanda, string> = {
 export const ORIGEM_DESCRICAO: Record<OrigemDemanda, string> = {
   ESPONTANEA: 'Um problema, necessidade ou oportunidade registrado a qualquer momento.',
   INDUZIDA: 'Resposta a uma campanha, desafio, hackathon, residência ou ação semelhante.',
-};
-
-export const NATUREZA_LABEL: Record<NaturezaDemanda, string> = {
-  PROBLEMA: 'Problema',
-  NECESSIDADE: 'Necessidade',
-  OPORTUNIDADE: 'Oportunidade',
 };
 
 export const TIPO_CAMPANHA_LABEL: Record<TipoCampanha, string> = {
@@ -104,16 +97,49 @@ export const TAREFA_RESPONSAVEL: Record<EstadoTarefa, PerfilUsuario> = {
 
 export const TAREFAS: EstadoTarefa[] = ['AGUARDANDO_TRIAGEM', 'AGUARDANDO_PARECER', 'AGUARDANDO_GOVERNANCA', 'AGUARDANDO_VALIDACAO'];
 
-export const SOLICITACAO_LABEL: Record<StatusSolicitacao, string> = {
-  PENDENTE: 'Aguardando governança',
+// Pedidos de avanço e propostas de configuração
+export const GOVERNANCA_LABEL: Record<StatusGovernanca, string> = {
+  PENDENTE: 'Pendente',
   APROVADA: 'Aprovada',
   REJEITADA: 'Rejeitada',
+  CANCELADA: 'Cancelada',
 };
 
-export const SOLICITACAO_BADGE: Record<StatusSolicitacao, string> = {
+export const GOVERNANCA_BADGE: Record<StatusGovernanca, string> = {
   PENDENTE: 'bg-amber-50 text-amber-800 border-amber-300 border-dashed',
   APROVADA: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   REJEITADA: 'bg-rose-50 text-rose-700 border-rose-200',
+  CANCELADA: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+export const STATUS_GOVERNANCA: StatusGovernanca[] = ['PENDENTE', 'APROVADA', 'REJEITADA', 'CANCELADA'];
+
+export const TIPO_PROPOSTA_LABEL: Record<TipoProposta, string> = {
+  COLUNA: 'Coluna',
+  TRANSICAO: 'Percurso',
+};
+
+export const TIPO_TERMINAL_LABEL: Record<TipoTerminal, string> = {
+  CONCLUSAO: 'Conclusão',
+  DESCONTINUACAO: 'Descontinuação',
+};
+
+export const RECOMENDACAO_LABEL: Record<StatusRecomendacao, string> = {
+  PENDENTE: 'Pendente',
+  CONVERTIDA: 'Convertida',
+  RECUSADA: 'Recusada',
+};
+
+export const RECOMENDACAO_BADGE: Record<StatusRecomendacao, string> = {
+  PENDENTE: 'bg-amber-50 text-amber-800 border-amber-300 border-dashed',
+  CONVERTIDA: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  RECUSADA: 'bg-rose-50 text-rose-700 border-rose-200',
+};
+
+export const TIPO_GESTAO_LABEL: Record<TipoGestao, string> = {
+  CADASTRO: 'Alteração cadastral',
+  ARQUIVAMENTO: 'Arquivamento',
+  REATIVACAO: 'Reativação',
 };
 
 export const VALIDACAO_LABEL: Record<ResultadoValidacao, string> = {
@@ -128,11 +154,15 @@ export const VALIDACAO_BADGE: Record<ResultadoValidacao, string> = {
   NAO_VALIDADA: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
+// Campos da qualificação: todos são textos obrigatórios
 export const CRITERIOS_QUALIFICACAO = [
   { chave: 'aderenciaTese', label: 'Aderência à Tese', dica: 'Alinhamento com a Tese de Inovação e as arenas estratégicas.' },
   { chave: 'relevancia', label: 'Relevância', dica: 'Tamanho do problema e impacto para o negócio.' },
   { chave: 'grauInovacao', label: 'Grau de inovação', dica: 'Do incremental ao disruptivo.' },
-  { chave: 'viabilidade', label: 'Viabilidade e factibilidade', dica: 'Recursos, tecnologia e prazo disponíveis.' },
+  { chave: 'viabilidade', label: 'Viabilidade', dica: 'Recursos, tecnologia e prazo disponíveis.' },
+  { chave: 'maturidadeTecnologica', label: 'Maturidade tecnológica', dica: 'Leitura da maturidade da solução. Não altera o TRL do projeto.' },
+  { chave: 'fundamentacao', label: 'Fundamentação', dica: 'O que sustenta a análise.' },
+  { chave: 'conclusao', label: 'Conclusão', dica: 'Encaminhamento recomendado.' },
 ] as const;
 
 export const RADAR_EIXOS = ['Negócio', 'Produto', 'Time', 'Receita'] as const;

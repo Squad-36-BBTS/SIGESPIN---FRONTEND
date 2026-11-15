@@ -2,32 +2,32 @@
 
 Este documento explica o site inteiro para quem vai trabalhar em uma parte dele: o que o sistema faz, os fluxos, cada tela, as regras, o design e como o código está organizado.
 
+**Versão das regras: Fase 3.** As regras seguem o guia [docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md). O que mudou em relação à versão anterior está em [docs/FASE3_MUDANCAS.md](docs/FASE3_MUDANCAS.md).
+
 ---
 
 ## 1. O que é o sistema
 
-O **SIGES-PIN** é o sistema de gestão do **portfólio de inovação da BBTS**. Ele acompanha uma ideia desde o registro até a conclusão ou o descarte:
+O **SIGES-PIN** é o sistema de gestão do **portfólio de inovação da BBTS**. Ele acompanha uma ideia desde o registro até a conclusão, o descarte ou o arquivamento:
 
-1. alguém registra um problema, necessidade ou oportunidade (**demanda**);
-2. um Analista faz a triagem e a qualificação;
-3. Especialistas dão pareceres técnicos quando precisa;
-4. a maturidade é medida em **TRL** (1 a 9);
-5. o projeto anda pelas etapas do **Kanban** (Ideação → POC → MVP → Concluído, ou Descontinuado);
-6. entregas e MVPs são validados pelo dono do problema.
+1. um Demandante cadastra um problema, necessidade ou oportunidade (**demanda**), ou converte uma **recomendação** recebida;
+2. um Analista qualifica a demanda e consulta Especialistas quando precisa;
+3. Especialistas emitem **pareceres**, em resposta a consultas ou de forma independente;
+4. a maturidade é medida em **TRL** (1 a 9), sempre com evidências do projeto;
+5. o projeto anda pelos **percursos do Kanban**: livres (movimentação direta) ou governados (pedido de avanço e decisão do Especialista);
+6. entregas são validadas pelo Demandante responsável, que também registra **correções**;
+7. o Especialista administra o quadro, edita, arquiva e reativa projetos.
 
-Tudo fica registrado com autor, data e evidências.
-
-A base é o guia **“SIGES-PIN — Fluxo de usuário para protótipo do Front-end”** e a documentação de domínio em `docs/`.
+Tudo fica registrado com autor, data, justificativa e evidências.
 
 ### O que é simulado
 
 O protótipo roda sozinho, sem back-end. Ficam simulados:
-- login;
-- API, com um banco em memória que aplica todas as regras;
-- sugestão de IA;
-- envio de arquivos.
+- o acesso, com um seletor de usuários fictícios;
+- a API, com um banco no navegador que aplica as regras da Fase 3;
+- a sugestão de IA na nova demanda.
 
-Cada item simulado aparece marcado na tela, por exemplo “Modo demonstração” e “Simulado”.
+As evidências são arquivos fictícios já vinculados aos projetos; os formulários as **selecionam**, como pede o guia.
 
 ---
 
@@ -56,210 +56,157 @@ npm run dev
 - Antes de rodar, copie `.env.example` para `.env`. Os valores padrão são `VITE_USE_MOCK=true` e `VITE_API_BASE_URL=/api`.
 - `npm run build` checa os tipos e gera a versão de produção.
 
-### Usuários de teste
+### Usuários de teste (guia, seção 4)
 
-A senha está em `src/services/mock/seed.ts`.
+A senha está em `src/services/mock/seed.ts`. Na tela de login, os botões de “Login simulado” preenchem e-mail e senha.
 
-| Perfil | E-mail | Observação |
-|---|---|---|
-| Demandante | `demandante@bbts.com.br` | Mariana Costa, dona de várias demandas |
-| Analista | `analista@bbts.com.br` | Rafael Lima, conduz várias iniciativas |
-| Especialista | `especialista@bbts.com.br` | Fernanda Rocha, Segurança da informação |
-| Especialista | `joao.prado@bbts.com.br` | João Prado, Dados e IA |
+| Perfil | Nome | E-mail | Para que serve |
+|---|---|---|---|
+| Demandante | Mariana Costa | `demandante@bbts.com.br` | Responsável por várias demandas |
+| Demandante | Bruno Alves | `bruno.alves@bbts.com.br` | Mostra a diferença entre ser o responsável e só ter o mesmo perfil |
+| Analista | Rafael Lima | `analista@bbts.com.br` | Conduz as iniciativas |
+| Especialista | Fernanda Rocha | `especialista@bbts.com.br` | Segurança da informação |
+| Especialista | João Prado | `joao.prado@bbts.com.br` | Dados e IA; mostra que só o destinatário responde a consulta |
 
-- Na tela de login, os botões de “Login simulado” preenchem e-mail e senha.
-- **Restaurar dados:** em **Meu perfil** (ou na entrada simplificada, quando o zip 1 não está junto), essa opção volta o banco simulado ao estado inicial.
-- **Falha de envio:** para simular uma falha, anexe um arquivo com `#falha` no nome.
+- **Trocar de usuário mantém os registros**, para um perfil continuar o trabalho do outro. Ao sair, a tela volta ao seletor.
+- **Restaurar dados:** em **Meu perfil** (ou na entrada simplificada, quando o zip 1 não está junto). A chave do banco no navegador é `@SIGES_PIN:mockdb:v5`.
 
 ---
 
 ## 3. Perfis e regras
 
-São **três perfis**. Não existem perfis de Executivo ou Comitê nesta versão: o Especialista acumula a decisão de governança.
+São **três perfis**. Todos consultam o portfólio, os detalhes, as notificações, as propostas de configuração e os históricos.
 
-| Perfil | Papel |
+| Perfil | Jornada típica |
 |---|---|
-| **Demandante** | Dono do problema. Registra a demanda, acompanha, adiciona contexto e **valida** entregas e MVPs. |
-| **Analista** | Faz triagem e qualificação, consulta Especialistas, avalia o TRL, movimenta o Kanban e publica entregas. A primeira qualificação define o Analista que **conduz** a iniciativa. |
-| **Especialista** | Emite **parecer técnico** e **decide** transições que exigem governança. Parecer e decisão são ações diferentes. |
+| **Demandante** | Cadastra demanda, acompanha o portfólio, registra correções e valida entregas quando é o responsável pelo projeto. Responde a recomendações destinadas a ele. |
+| **Analista** | Qualifica demandas, encaminha consultas, registra TRL, movimenta em percurso livre, solicita governança quando exigida, submete entregas, recomenda demandas e propõe alterações no quadro. |
+| **Especialista** | Emite parecer, registra TRL, movimenta projetos, decide pedidos, submete entregas, recomenda demandas, administra o quadro e atualiza ou arquiva projetos. |
 
-Todos os perfis **consultam o portfólio inteiro**. O que muda é o que cada um pode fazer.
+### Matriz de permissões
 
-### Matriz de ações
+A matriz fica em `src/utils/permissoes.ts`. É a fonte única, usada pela tela (que mostra ou bloqueia a ação com o motivo) e pelo banco simulado (que confere de novo ao executar). A tela **Meu perfil** mostra a matriz completa.
 
-A matriz fica em `src/utils/permissoes.ts`. É a fonte única, usada pela tela e pelo banco simulado.
-
-| Ação | Demandante | Analista | Especialista |
-|---|:-:|:-:|:-:|
-| Consultar portfólio | Sim | Sim | Sim |
-| Registrar demanda | Sim | *A definir* | *A definir* |
-| Qualificar demanda | Não | Sim | Não |
-| Consultar Especialista | Não | Sim | — |
-| Emitir parecer técnico | Não | Não | Sim |
-| Avaliação de TRL | Não | Sim | *A definir* |
-| Mover sem governança | Não | Sim | *A definir* |
-| Solicitar transição com governança | Não | Sim | Não |
-| Decidir transição com governança | Não | Não | Sim |
-| Publicar entrega/MVP | Não | Sim | *A definir* |
-| Validar entrega/MVP | Sim (dono) | Não | Não |
-| Configurar etapas e transições | *A definir* | *A definir* | *A definir* |
-
-**“A definir”** ainda depende de decisão do cliente. Na tela, a ação aparece **desabilitada**, com o selo **“Em discussão”** e o motivo.
+| Ação | Demandante | Analista | Especialista | Condição adicional |
+|---|---|---|---|---|
+| Cadastrar demanda | Sim | — | — | Começa em Ideação |
+| Qualificar e consultar Especialista | — | Sim | — | Projeto ativo; destinatário Especialista ativo |
+| Emitir parecer | — | — | Sim | Em resposta, só o destinatário |
+| Registrar TRL | — | Sim | Sim | Evidências do projeto |
+| Mover diretamente | — | Percurso livre | Livre ou governado | Sem pedido pendente |
+| Solicitar avanço governado | — | Sim | — | Um pedido pendente por projeto |
+| Decidir avanço | — | — | Sim | Pedido pendente |
+| Cancelar avanço | — | Pedido próprio | Sim | Pedido pendente |
+| Configurar quadro diretamente | — | — | Sim | Uso e versão |
+| Propor coluna ou percurso | — | Sim | — | Justificativa |
+| Decidir proposta | — | — | Sim | Pedido pendente |
+| Cancelar proposta | — | Pedido próprio | Sim | Pedido pendente |
+| Submeter entrega | — | Sim | Sim | Projeto ativo |
+| Validar entrega e registrar correção | Responsável | — | — | Projeto ativo |
+| Recomendar demanda | — | Sim | Sim | Destinatário Demandante ativo |
+| Converter ou recusar recomendação | Destinatário | — | — | Recomendação pendente |
+| Editar, arquivar e reativar projeto | — | — | Sim | Versão vigente e justificativa |
 
 ### Regras que valem em todo o site
 
-- **TRL é indicador**, não pedido de avanço. Pode subir ou descer, sempre com justificativa e evidência. Uma **redução** exige justificativa de pelo menos 40 caracteres e fica destacada.
-- **Kanban configurável.** As etapas iniciais são Ideação, POC, MVP, Concluído e Descontinuado. Cada transição diz se **exige governança**:
-  - **sem governança:** o Analista move direto, com justificativa;
-  - **com governança:** o Analista cria uma **solicitação** e o projeto **continua na etapa atual** até o Especialista aprovar (o projeto avança) ou rejeitar (fica onde está);
-  - só pode haver uma solicitação pendente por projeto.
-- **Validação não muda nada sozinha.** Validar uma entrega (validada, com ressalvas ou não validada) não altera o TRL nem a etapa.
-- **Etapa e tarefa são coisas diferentes.** “Aguardando triagem”, “Aguardando parecer”, “Aguardando governança” e “Aguardando validação” são **pendências**, mostradas como selos tracejados, e não colunas do Kanban.
-- **Projeto em etapa final** (Concluído ou Descontinuado) não aceita ações do ciclo.
-- **Dados financeiros** (`dispendioEstimado`) não aparecem em nenhuma tela até o cliente definir a política.
-- **Sem autocadastro.** A tela de cadastro envia um **pedido de acesso**; a administração do Hub analisa e define o perfil. Como o guia ainda não definiu essa etapa, a tela é marcada “Em discussão” e o envio é simulado.
+- **Projeto arquivado** continua consultável; as ações que exigem projeto ativo ficam bloqueadas até a reativação. Arquivar exige que não haja pedido de avanço pendente.
+- **Evidências** devem existir, pertencer ao mesmo projeto e aparecer uma única vez. TRL e pedido de avanço exigem ao menos uma; no parecer a lista pode ficar vazia; na correção há uma evidência opcional.
+- **TRL é indicador.** Pode subir, cair ou se manter; o histórico guarda o nível anterior e o registrado.
+- **Kanban:** a origem do percurso precisa ser a etapa atual; etapa terminal não admite saída. Em percurso governado, o cartão fica na origem enquanto o pedido estiver pendente. Aprovar revalida o percurso e move; rejeitar e cancelar mantêm a etapa.
+- **Notificações:** toda movimentação feita por um Especialista (direta ou por aprovação) gera uma notificação global.
+- **Versão:** colunas, percursos e projetos têm versão. Salvar com versão antiga dá conflito; na edição do projeto, o rascunho fica preservado e a tela mostra a versão mais recente.
+- **Etapa e tarefa são coisas diferentes.** “Aguardando triagem”, “Aguardando parecer”, “Aguardando governança” e “Aguardando validação” são **pendências**, mostradas como selos tracejados.
+- **Sem autocadastro.** A tela de cadastro envia um **pedido de acesso** simulado.
 
 ### Comportamento de todos os formulários
 
 1. **Preencher → Revisar → Confirmar.** Antes de enviar, aparece um resumo do que vai ser registrado.
-2. Depois do sucesso, a mensagem diz **o que mudou e quem é o próximo responsável**.
-3. Se outra pessoa alterou o projeto ao mesmo tempo (erro 409), aparece o aviso com o botão **Recarregar**.
-4. Anexos são validados em tipo e tamanho (10 MB; PDF, Office, imagens, JSON, CSV, TXT, ZIP) e mostram o estado do envio (pronto, enviando, falhou). Uma falha não registra nada e permite reenviar.
-5. Toda ação indisponível mostra o **motivo**, em vez de sumir ou ficar sem explicação.
+2. Erros de validação aparecem no campo; depois do sucesso, a mensagem diz **o que mudou e quem é o próximo responsável**.
+3. Toda ação indisponível mostra o **motivo**, em vez de sumir sem explicação.
+4. Listas vazias mostram um estado vazio explicando o que vai aparecer ali.
 
 ---
 
-## 4. Os 4 fluxos e as telas
+## 4. Os 4 zips e as telas
 
-O projeto tem **uma base comum** e **quatro zips de fluxo**, um para cada perfil do login simulado: Demandante, Analista, Especialista · Segurança da informação e Especialista · Dados e IA. O Especialista tem duas jornadas no guia (3.3 A, parecer técnico, e 3.3 B, decisão de governança), e cada uma ficou com um dos dois Especialistas do login. Cada parte é uma pasta em `src/fluxos/`.
+O projeto tem **uma base comum** e **quatro zips**, um para cada integrante. Cada parte é uma ou mais pastas em `src/fluxos/`; as três telas compartilhadas têm um responsável.
 
-```
-Landing ─┬─ Login ──→ Dashboard ─┬─ Minha fila ─────────┐
-         └─ Cadastro             ├─ Portfólio ──────────┼──→ Detalhe do projeto
-            (pedido de acesso)   ├─ Nova demanda        │     (ações de cada perfil)
-                                 ├─ Ações de mobilização│
-                                 ├─ Configurar Kanban   │
-                                 └─ Meu perfil          │
-```
-
-| Zip | Login de teste | Pastas | Telas | Quantas |
+| Zip | Integrante | Login de teste | Pastas | Telas e ações |
 |---|---|---|---|---|
-| 1 · Demandante + acesso | Mariana Costa | `acesso/`, `demandante/` | Landing, Login, Cadastro, Nova demanda, Validar entrega | 5 |
-| 2 · Analista | Rafael Lima | `analista/` | Qualificação, Consultar Especialista, Avaliação TRL, Movimentar Kanban, Publicar entrega | 5 |
-| 3 · Especialista · Segurança da informação | Fernanda Rocha | `governanca/` + Portfólio e Minha fila | Decidir transição, Configurar Kanban, Meu perfil, **Portfólio**, **Minha fila** | 5 |
-| 4 · Especialista · Dados e IA | João Prado | `parecer/`, `visao-geral/` + Detalhe do projeto | Emitir parecer, Dashboard, Ações de mobilização, **Detalhe do projeto** | 4 |
-
-**Por que a divisão é justa:**
-- **Perfis respeitados:** cada perfil fica com as ações dele no próprio zip.
-- **Telas compartilhadas com dono:** como o Especialista tem poucas ações no guia, as telas compartilhadas também ganharam responsável. Elas continuam em todos os zips, porque sem elas nenhum zip roda, mas só o responsável altera:
-  - **Portfólio** e **Minha fila** ficam com o zip 3, que já cuida do Kanban e da governança;
-  - **Detalhe do projeto** fica com o zip 4. É a maior tela do sistema (8 abas, cerca de 760 linhas) e por isso vale por mais de uma.
-- **Seções da Minha fila:** cada zip mantém a seção do seu perfil (`fila.tsx`). Essas seções não entram na contagem acima.
+| 1 | Kaua | Mariana Costa | `acesso/`, `demandante/`, `recomendacoes/` | Landing, Login (5 usuários), Cadastro, Nova demanda, Validar entrega, Registrar correção, Recomendações |
+| 2 | Lucas | Rafael Lima | `analista/`, `propostas/` | Qualificação, Consulta, TRL, Movimentar (direto ou pedido), Submeter entrega, Propostas de configuração |
+| 3 | Abraão | Fernanda Rocha | `governanca/` + Portfólio e Minha fila | Decidir avanço, Cancelar pedido, Configuração do quadro, Meu perfil (matriz), **Portfólio**, **Minha fila** |
+| 4 | Angelo | João Prado | `parecer/`, `gestao/`, `visao-geral/` + Detalhe do projeto | Emitir parecer, Editar projeto, Arquivar e reativar, Notificações, Dashboard, Ações de mobilização, **Detalhe do projeto** |
 
 ### Base comum (vai em todos os zips)
 
-São as telas compartilhadas pelos três perfis, mais tudo o que faz o site funcionar. As três telas abaixo têm responsável: a **Minha fila** e o **Portfólio** são do zip 3; o **Detalhe do projeto** é do zip 4.
+| Tela | Rota | Responsável | O que tem |
+|---|---|---|---|
+| **Minha fila** | `/app/fila` | Zip 3 | As tarefas do perfil; as seções vêm de cada fluxo (`fila.tsx`). |
+| **Portfólio** | `/app/portfolio` | Zip 3 | Lista ou Kanban; busca por texto e filtros de etapa, origem, ação, arena, pendência e **arquivamento**; colunas de arena, etapa, origem, TRL e responsáveis; paginação. |
+| **Detalhe do projeto** | `/app/projetos/:id` | Zip 4 | Resumo, etapa, TRL, responsáveis, versão; barra **“Suas ações”**; avisos de arquivado, legado sem Demandante e pedido pendente; 10 abas: Visão geral, Qualificação, Consultas e pareceres, TRL, Movimentações e governança, Entregas e validações, Correções, Evidências, Participação, Histórico de gestão. |
+| Entrada simplificada | `/login` | — | Usada só quando o zip 1 não está junto. |
 
-| Tela | Rota | O que tem |
-|---|---|---|
-| **Minha fila** | `/app/fila` | As tarefas pendentes do perfil. As seções vêm de cada fluxo (`fila.tsx`). |
-| **Portfólio** | `/app/portfolio` | Lista ou Kanban, com colunas da configuração, busca, filtros (etapa, origem, ação de mobilização, arena, pendência), contagens e paginação. |
-| **Detalhe do projeto** | `/app/projetos/:id` | Cabeçalho com etapa, TRL, origem e responsáveis; selos de pendência; barra **“Suas ações”** (vinda dos fluxos); 8 abas, descritas abaixo. |
-| Entrada simplificada | `/login` | Usada **só** quando o zip 1 (landing e login) não está junto: escolhe um usuário de teste para entrar. |
-| Não encontrado | `*` | Página 404. |
+A base também inclui tipos, serviços, banco simulado, matriz de permissões, componentes, menu, formulário com revisão, seletor de evidências (`components/projeto/evidencias.tsx`), radar 4D e régua TRL.
 
-As 8 abas do Detalhe do projeto:
-- **Visão geral:** problema, contexto, hipótese, origem, Lei do Bem.
-- **Participação:** conversa entre demandante, analista e especialistas.
-- **Qualificação e pareceres:** qualificações em ordem cronológica, consultas e respostas.
-- **Maturidade (TRL):** régua TRL de 1 a 9, radar 4D (inicial × atual) e histórico de avaliações.
-- **Kanban:** transições disponíveis, solicitações e decisões, movimentações.
-- **Entregas:** entregas, MVPs e as validações.
-- **Evidências:** tabela com arquivo, tipo, registro de origem, autor/data e estado de envio.
-- **Histórico:** linha do tempo de tudo, só para consulta.
-
-A base também inclui:
-- configurações;
-- tipos;
-- serviços da API e banco simulado;
-- matriz de permissões;
-- componentes visuais;
-- menu lateral;
-- formulário com revisão (`components/projeto/formulario.tsx`);
-- radar 4D e régua TRL;
-- documentação.
-
-### Zip 1 · Demandante + landing, login e cadastro
-
-Pastas: `src/fluxos/acesso/` e `src/fluxos/demandante/`. Login de teste: **Mariana Costa**.
-
-Esta parte cobre a entrada no sistema e a jornada do guia 3.1: o Demandante registra a demanda, acompanha e valida entregas.
+### Zip 1 · Kaua · Demandante, acesso e recomendações
 
 | Tela ou ação | Onde | O que tem |
 |---|---|---|
-| **Landing page** | `/` | Apresentação do sistema com fotos reais. Seções: topo, “O sistema”, “Como funciona” (jornada em 4 passos), Perfis, Maturidade (TRL em 3 faixas: Pesquisa, Desenvolvimento e Operação, com os 9 níveis), Dúvidas frequentes e chamada final. Botões “Acessar o sistema” e “Solicitar acesso”. |
-| **Login** | `/login` | E-mail e senha, mostrar/ocultar senha, erros, bloqueio após 5 tentativas (60 s), aviso de sessão expirada, atalhos de login simulado e link “Solicitar acesso”. |
-| **Cadastro** | `/cadastro` | **Pedido de acesso:** nome, e-mail institucional (@bbts.com.br), área, perfil desejado e justificativa. Não cria conta: a administração analisa e define o perfil. Marcado como **“Em discussão”** e **“Simulado”**, porque o guia ainda não definiu essa etapa. E-mail já cadastrado gera aviso. |
-| **Nova demanda** | `/app/demandas/nova` | Origem **espontânea** (problema, necessidade, oportunidade) ou **induzida** (associada a uma ação de mobilização). Título, área, descrição e contexto. **Sugestão da IA** (simulada) que só preenche campos para revisão. Revisão e confirmação. Para outros perfis, explica que está “a definir”. A demanda entra em **Ideação**, aguardando triagem. |
-| **Validar entrega** | Detalhe do projeto e Minha fila | Mostra descrição e evidências; resultado validada, com ressalvas ou não validada; observações. Não muda Kanban nem TRL. |
-| **Adicionar contexto** | Detalhe do projeto | Leva à aba Participação. |
-| **Minha fila do Demandante** | `/app/fila` | “Entregas aguardando a sua validação” e “Minhas demandas”. |
+| **Landing, Login e Cadastro** | `/`, `/login`, `/cadastro` | Login simulado com os 5 usuários do guia. Cadastro é pedido de acesso simulado. |
+| **Nova demanda** | `/app/demandas/nova` | Título (até 255), descrição da dor, área, origem, ação de mobilização (só na induzida), TRL inicial declarado e hipótese opcional. Começa em Ideação, arena “A definir”. |
+| **Converter recomendação** | `/app/demandas/nova?recomendacao=id` | Mesmo formulário, como demanda espontânea, com título e descrição da recomendação. |
+| **Validar entrega** | Detalhe e Minha fila | Resultado e observações obrigatórios; cada manifestação é um novo registro. Só o Demandante responsável. |
+| **Registrar correção** | Detalhe | Descrição, referência opcional (até 500) e evidência opcional do projeto. |
+| **Recomendações** | `/app/recomendacoes` | Lista com filtro de status e visibilidade por perfil; recomendar (Analista e Especialista); converter ou recusar com justificativa (destinatário). |
 
-### Zip 2 · Analista: qualificar e conduzir
-
-Pasta: `src/fluxos/analista/`. Login de teste: **Rafael Lima**.
-
-> Guia 3.2. O Analista faz a triagem, qualifica, consulta, avalia o TRL, move o Kanban e publica entregas.
+### Zip 2 · Lucas · Analista e propostas de configuração
 
 | Tela ou ação | O que tem |
 |---|---|
-| **Qualificação** | Aderência à tese, relevância, grau de inovação, viabilidade (texto), TRL avaliado, fundamentação e conclusão. Novas qualificações preservam as anteriores e não movem o Kanban. |
-| **Consultar Especialista** | Área técnica e, opcionalmente, um especialista; pergunta dirigida. Sem pessoa escolhida, qualquer especialista da área responde. |
-| **Avaliação de TRL** | Seletor de 1 a 9 com o atual marcado, alerta de redução, justificativa, leitura opcional do radar 4D e evidência obrigatória. |
-| **Movimentar no Kanban** | Transições permitidas a partir da etapa atual, indicando “com governança” ou “sem governança”. Com governança, vira solicitação, exige evidência e o projeto fica na etapa. |
-| **Publicar entrega/MVP** | Título, descrição, “é MVP”, arquivos. Segue para o Demandante validar. |
-| **Minha fila do Analista** | Aguardando triagem, solicitações pendentes, decisões recebidas, pareceres recebidos e validações recebidas. |
+| **Qualificação** | Sete textos obrigatórios; não altera etapa nem TRL; histórico preservado. |
+| **Consultar Especialista** | Especialista ativo obrigatório e questão; pode ser antes da qualificação. |
+| **Registrar TRL** | Nível 1 a 9, justificativa e ao menos uma evidência do projeto. Também para o Especialista. |
+| **Movimentar** | Ao escolher o destino, oferece movimentação direta (percurso livre, ou Especialista em qualquer percurso) ou pedido de avanço (Analista em percurso governado, com evidências). |
+| **Submeter entrega** | Só a descrição. Também para o Especialista. |
+| **Propostas de configuração** | `/app/propostas`: filtro por status e tipo; propor coluna ou percurso; aprovar, rejeitar e cancelar conforme o perfil. |
 
-Todas as ações aparecem na barra **“Suas ações”** do Detalhe do projeto. O Especialista vê as ações “a definir” para ele (TRL, mover, entrega) desabilitadas, com o selo “Em discussão”.
+### Zip 3 · Abraão · Governança, quadro, Portfólio e Minha fila
 
-### Zip 3 · Especialista · Segurança da informação: governança e Kanban
+| Tela ou ação | O que tem |
+|---|---|
+| **Decidir avanço** | Aprovar (revalida e move, com notificação) ou rejeitar, com justificativa. |
+| **Cancelar pedido** | Analista (pedido próprio) ou Especialista, com justificativa; o cartão fica onde está. |
+| **Configuração do quadro** | `/app/kanban/configuracao`: criar coluna (código, nome, ordem, terminal), editar (nome, ordem, ativa, versão), criar e editar percursos; consulta para os demais perfis. |
+| **Meu perfil** | Matriz completa com a condição adicional de cada ação e “Restaurar dados”. |
+| **Portfólio** e **Minha fila** | Telas compartilhadas sob responsabilidade deste zip. |
 
-Pasta: `src/fluxos/governanca/`, mais a responsabilidade pelas telas compartilhadas Portfólio (`src/pages/app/PortfolioPage.tsx`) e Minha fila (`src/pages/app/MinhaFilaPage.tsx`). Login de teste: **Fernanda Rocha**. Guia 3.3 B: o Especialista decide as transições que exigem governança.
+### Zip 4 · Angelo · Parecer, gestão, notificações e Detalhe
 
-| Tela ou ação | Onde | O que tem |
-|---|---|---|
-| **Decidir transição** | Detalhe (aba Kanban e “Suas ações”), Minha fila | Etapa atual → destino, justificativa e evidências do pedido; aprovar ou rejeitar, com justificativa obrigatória. Aprovar move; rejeitar mantém. Decidir duas vezes gera conflito 409. |
-| **Configurar Kanban** | `/app/kanban/configuracao` | Etapas (criar, editar, inativar, ordenar, remover) e transições (ativar, exigir governança). Não remove nem inativa etapa em uso. Como a permissão está “a definir”, abre em **modo consulta**, com **“Simular edição”** marcada para discussão. |
-| **Minha fila: governança** | `/app/fila` | “Transições aguardando governança”, com Aprovar e Rejeitar direto na lista. |
-| **Meu perfil** | `/app/perfil` | Dados do usuário, matriz completa de papéis × ações e “Restaurar dados”. |
-| **Portfólio** (compartilhada) | `/app/portfolio` | Lista ou Kanban, com colunas da configuração, busca, filtros (etapa, origem, ação de mobilização, arena, pendência), contagens e paginação. |
-| **Minha fila** (compartilhada) | `/app/fila` | As tarefas pendentes do perfil. As seções vêm de cada fluxo (`fila.tsx`). |
-
-### Zip 4 · Especialista · Dados e IA: parecer, indicadores e detalhe do projeto
-
-Pastas: `src/fluxos/parecer/` e `src/fluxos/visao-geral/`, mais a responsabilidade pela tela compartilhada Detalhe do projeto (`src/pages/app/ProjetoDetalhesPage.tsx`). Login de teste: **João Prado**. Guia 3.3 A: o Especialista emite parecer técnico. Inclui também o dashboard e as ações de mobilização, usados pelos três perfis.
-
-| Tela ou ação | Onde | O que tem |
-|---|---|---|
-| **Emitir parecer** | Detalhe (aba Qualificação e “Suas ações”), Minha fila | Pergunta do Analista, fundamentação, conclusão e evidências técnicas. O parecer subsidia a análise; não aprova transições. |
-| **Minha fila: pareceres** | `/app/fila` | “Consultas aguardando parecer”, para você ou para a sua área. |
-| **Dashboard** | `/app` | Saudação, filtros por período, etapa e origem, indicadores (cada número leva aos projetos de origem no portfólio), pendências do portfólio, projetos por etapa e por arena, radar médio e projetos atualizados recentemente. Indicadores marcados como “a validar com o cliente”. Sem este zip, a página inicial da área logada é a Minha fila. |
-| **Ações de mobilização** | `/app/mobilizacao` | Campanhas, desafios, hackathons e residências vigentes, com período, total de demandas, “Ver demandas” e “Registrar demanda”. O botão “Nova ação” está desabilitado (“a definir”). |
-| **Detalhe do projeto** (compartilhada) | `/app/projetos/:id` | Cabeçalho com etapa, TRL, origem e responsáveis; selos de pendência; barra **“Suas ações”** (vinda dos fluxos); 8 abas, descritas abaixo. |
+| Tela ou ação | O que tem |
+|---|---|
+| **Emitir parecer** | Independente ou em resposta à consulta dirigida a quem emite; evidências opcionais. |
+| **Editar projeto** | Dados, arena, Lei do Bem, dispêndio, Demandante e Analista responsáveis, com versão e justificativa; conflito preserva o rascunho. |
+| **Arquivar e reativar** | Com versão e justificativa; histórico de gestão com valores anteriores e atuais. |
+| **Notificações** | `/app/notificacoes`, com contador de não lidas no menu. |
+| **Dashboard** e **Ações de mobilização** | Indicadores do portfólio ativo, contagem de arquivados e ações de mobilização. |
+| **Detalhe do projeto** | Tela compartilhada sob responsabilidade deste zip. |
 
 ---
 
-## 5. Caminho completo para testar
+## 5. Cenários para testar (guia, seção 4)
 
-1. **Demandante** registra uma demanda induzida → entra em Ideação, “Aguardando triagem”.
-2. **Analista** qualifica → passa a conduzir a iniciativa.
-3. **Analista** consulta “Dados e IA” → **João Prado** (Especialista) emite o parecer com anexo.
-4. **Analista** registra uma avaliação de TRL com evidência (2 → 3).
-5. **Analista** solicita Ideação → POC → projeto **continua** em Ideação, “Aguardando governança”.
-6. **Especialista** rejeita → fica em Ideação. Nova solicitação, **Especialista** aprova → vai para **POC**.
-7. **Analista** publica um MVP → **Demandante** valida com ressalvas → etapa e TRL **não mudam**.
-
-O roteiro completo, com 21 passos, está em `docs/RELATORIO_MUDANCAS.md`.
+| Cenário | Como testar |
+|---|---|
+| Cadastro por origem | Mariana cadastra uma demanda espontânea (sem ação) e uma induzida (com ação). Ambas começam em Ideação, com o TRL declarado no detalhe. |
+| Consulta e parecer | Rafael consulta João antes de qualificar. João responde; Fernanda emite um parecer independente e não consegue responder a consulta do João. |
+| Avaliação de TRL | Rafael avalia “Detecção de anomalias em rede” de 5 para 3 com a evidência do projeto; o histórico mostra os dois níveis. |
+| Governança | Rafael pede o avanço de “Assistente de atendimento” (POC → MVP); o cartão fica em POC. Fernanda aprova; o cartão muda e aparece a notificação. Rejeitar ou cancelar mantém a etapa. |
+| Quadro | Fernanda aprova a proposta da coluna “Piloto”; a coluna aparece no Kanban. |
+| Entrega e validação | Mariana valida a entrega de “Plataforma IoT”; Bruno vê o projeto, mas não pode validar. Uma nova validação preserva a primeira. |
+| Recomendação | Bruno converte “Digitalizar o protocolo de malotes” em uma demanda espontânea; a recusa exige justificativa. |
+| Arquivamento | Fernanda arquiva um projeto sem pedido pendente; os dados continuam consultáveis e as ações ficam bloqueadas até reativar. |
+| Legado | “Gestão inteligente de numerário” não tem Demandante; Fernanda atribui um pela edição do projeto. |
 
 ---
 
@@ -282,8 +229,8 @@ As cores estão definidas em `tailwind.config.js` com o prefixo `bb-`, por exemp
 | `bb-line` / `bb-line-2` | `#E2E8F0` / `#CBD5E1` | Bordas e divisórias |
 
 Cores de apoio:
-- **Etapas do Kanban:** cada etapa tem uma cor própria, configurável. A paleta fica em `CORES_ETAPA` (`utils/constants.ts`): âmbar, azul-céu, índigo, verde, rosa…
-- **Estados:** verde para aprovado e validado; âmbar para governança, ressalvas e redução de TRL; rosa para rejeitado e não validado; turquesa (teal) para o Especialista e os pareceres.
+- **Etapas do Kanban:** cada coluna tem uma cor própria, configurável. A paleta fica em `CORES_ETAPA` (`utils/constants.ts`).
+- **Estados:** verde para aprovado, validado e convertido; âmbar para pendente, ressalvas e redução de TRL; rosa para rejeitado, recusado e não validado; cinza para cancelado e arquivado; turquesa (teal) para o Especialista e os pareceres.
 
 ### Tipografia e forma
 
@@ -301,7 +248,7 @@ Cores de apoio:
   - a **barra superior** é enxuta, com logo, “Modo demonstração”, botão de destaque (Nova demanda), atalho da fila com contador e avatar;
   - o **menu fica na lateral DIREITA, escondido por padrão**. Abre como gaveta de 260 px por cima do conteúdo, no computador e no celular, e fecha com Esc, clique fora ou troca de página;
   - quem preferir pode **fixar um trilho de ícones** de 64 px no computador. A escolha fica salva no navegador;
-  - o menu mostra só os itens dos fluxos instalados, em ordem fixa: Minha fila, Portfólio, Dashboard, Nova demanda, Ações de mobilização, Configurar Kanban, Meu perfil.
+  - o menu mostra só os itens dos fluxos instalados, em ordem fixa: Minha fila, Portfólio, Dashboard, Nova demanda, Recomendações, Ações de mobilização, Notificações, Configurar Kanban, Propostas de configuração, Meu perfil.
 - **Área pública:** landing com fotos reais (Unsplash, de uso livre) e login em duas colunas, com foto e formulário.
 - **Responsivo** do celular ao desktop, com navegação por teclado, rótulos acessíveis e foco visível.
 
@@ -337,24 +284,28 @@ src/
 │   ├── registro.ts         # junta rotas e menu de todos os fluxos (temRota)
 │   ├── fila.ts · projeto.ts# juntam as seções da fila e as ações do detalhe
 │   ├── acesso/             # ZIP 1: landing, login, cadastro
-│   ├── demandante/         # ZIP 1: nova demanda, validação de entregas
+│   ├── demandante/         # ZIP 1: nova demanda, validação, correção
+│   ├── recomendacoes/      # ZIP 1: recomendações
 │   ├── analista/           # ZIP 2: qualificação, consulta, TRL, movimentação, entrega
-│   ├── governanca/         # ZIP 3: decisão de governança, configurar Kanban, meu perfil
+│   ├── propostas/          # ZIP 2: propostas de configuração do quadro
+│   ├── governanca/         # ZIP 3: decisão e cancelamento de avanço, configuração do quadro, meu perfil
 │   ├── parecer/            # ZIP 4: parecer técnico
-│   └── visao-geral/        # ZIP 4: dashboard, ações de mobilização
+│   ├── gestao/             # ZIP 4: editar, arquivar e reativar projeto
+│   └── visao-geral/        # ZIP 4: dashboard, ações de mobilização, notificações
 ├── pages/app/              # BASE: Minha fila e Portfólio (dono: zip 3), Detalhe do projeto (dono: zip 4)
 ├── pages/public/           # BASE: entrada simplificada e 404
 ├── components/
-│   ├── common/ui.tsx       # Logo, badges, BotaoAcao, Modal, Anexos, Campo, Skeleton…
+│   ├── common/ui.tsx       # Logo, badges, BotaoAcao, Modal, Campo, Skeleton…
 │   ├── layout/AppLayout.tsx# barra superior + menu lateral direito
 │   ├── fila/SecaoFila.tsx  # bloco de seção da Minha fila
 │   ├── projeto/formulario.tsx # Preencher → Revisar → Confirmar (todos os formulários)
+│   ├── projeto/evidencias.tsx # seleção e lista de evidências do projeto
 │   ├── radar/ · trl/       # radar 4D e régua TRL
 ├── contexts/AuthContext.tsx# sessão e perfil do usuário
 ├── hooks/                  # useAuth, useAsync, useDebounce, useReveal
 ├── services/               # api.ts (axios), index.ts (serviços), mock/ (banco simulado)
-├── types/                  # entidades e DTOs
-└── utils/                  # rótulos, TRL, formatadores, permissoes.ts (matriz)
+├── types/                  # entidades e DTOs com os nomes de campo do guia
+└── utils/                  # rótulos, TRL, formatadores, permissoes.ts (matriz), notificacoes.ts
 ```
 
 ### Como um fluxo se encaixa
@@ -372,40 +323,33 @@ O que acontece quando um fluxo não está instalado:
 - os links para elas somem (`temRota`);
 - os botões das abas do detalhe ficam ocultos (`temAcao`);
 - sem o zip 1, `/login` vira a entrada simplificada;
-- sem o zip 4, a página inicial da área logada é a Minha fila, e o Dashboard e as Ações de mobilização não aparecem no menu;
-- sem o zip 3, o Configurar Kanban e o Meu perfil não aparecem no menu.
+- sem o zip 4, a página inicial da área logada é a Minha fila.
 
 Por isso **cada zip roda sozinho**, e os quatro juntos formam o site completo.
 
 ### API
 
-As rotas da API ainda são **propostas**. Estão em `src/services/index.ts` e em `docs/RELATORIO_MUDANCAS.md`, seção 5. Para usar o back-end real, troque para `VITE_USE_MOCK=false`.
+As rotas da API ainda são **propostas** e ficam em `src/services/index.ts`; os DTOs usam os nomes de campo do guia. Para usar o back-end real, troque para `VITE_USE_MOCK=false`.
 
 ---
 
-## 8. Pontos em aberto (decisão do cliente)
+## 8. Pontos em aberto
 
-1. Analista e Especialista podem registrar demanda?
-2. Quem configura etapas e transições do Kanban?
-3. A avaliação de TRL do Analista precisa de revisão de um Especialista? O Especialista pode avaliar?
-4. Quais anexos são obrigatórios em cada registro?
-5. Quais indicadores entram no dashboard? Quem vê dados financeiros?
-6. Haverá rascunho, devolução para complementação ou rejeição na triagem?
-7. Quais limites de arquivo, formatos e textos de consentimento valem?
-8. Como funciona o pedido de acesso (cadastro)? Quem aprova, quais dados pedir e se o perfil desejado pode ser escolhido. Hoje a tela existe, marcada “Em discussão”, e o envio é simulado.
+1. As rotas definitivas da API da Fase 3 precisam ser confirmadas com o back-end.
+2. Como as evidências entram no projeto (upload) não está no guia; o protótipo usa evidências fictícias já vinculadas.
+3. Quem cadastra ações de mobilização e como funciona o pedido de acesso (cadastro) ainda não foram definidos.
+4. Quais indicadores entram no dashboard.
 
 ---
 
 ## 9. Trabalho em equipe
 
-| Zip | Responsável | Pastas próprias | Telas compartilhadas sob sua responsabilidade |
-|---|---|---|---|
-| `1-kaua-demandante-landing-login-cadastro` | Kaua | `src/fluxos/acesso/`, `src/fluxos/demandante/` | — |
-| `2-analista` | | `src/fluxos/analista/` | — |
-| `3-especialista-seguranca-da-informacao` | | `src/fluxos/governanca/` | `src/pages/app/PortfolioPage.tsx`, `src/pages/app/MinhaFilaPage.tsx` |
-| `4-especialista-dados-e-ia` | | `src/fluxos/parecer/`, `src/fluxos/visao-geral/` | `src/pages/app/ProjetoDetalhesPage.tsx` |
+| Zip | Integrante | Branch | Pastas próprias | Telas compartilhadas sob sua responsabilidade |
+|---|---|---|---|---|
+| 1 | Kaua | `fluxo-demandante-acesso` | `acesso/`, `demandante/`, `recomendacoes/` | — |
+| 2 | Lucas | `fluxo-analista` | `analista/`, `propostas/` | — |
+| 3 | Abraão | `especialista-seguranca` | `governanca/` | `PortfolioPage.tsx`, `MinhaFilaPage.tsx` |
+| 4 | Angelo | `especialista-dados-e-ia` | `parecer/`, `gestao/`, `visao-geral/` | `ProjetoDetalhesPage.tsx` |
 
-- **Cada pessoa mexe só nas suas pastas e nas telas compartilhadas que são dela.** O resto da base vem igual em todos os zips; mudanças nele devem ser combinadas com o grupo, para não gerar conflito.
-- **Cada tela compartilhada tem um único responsável.** Ela está em todos os zips, para cada um rodar sozinho, mas só o responsável altera. O nome do responsável está na primeira linha do arquivo.
-- **Por que os merges não conflitam:** como a base é idêntica em todas as branches, o git a junta sem conflito, e cada fluxo tem arquivos só dele.
-- O passo a passo de branch, commit e merge está em `COMO_SUBIR.md`, na pasta dos zips.
+- **Cada pessoa mexe só nas suas pastas e nas telas compartilhadas que são dela.** O resto da base vem igual em todos os zips; mudanças nele devem ser combinadas com o grupo.
+- **Por que os merges não conflitam:** a base é idêntica em todas as branches e cada fluxo tem arquivos só dele. O único conflito esperado é o `README.md`, que é específico de cada branch.

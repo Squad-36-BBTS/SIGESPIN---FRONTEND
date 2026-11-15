@@ -7,7 +7,7 @@ import { IMAGENS } from './imagens';
 import { Campo, Spinner } from '@/components/common/ui';
 import { useAuth } from '@/hooks';
 import { USE_MOCK } from '@/services/api';
-import { USUARIOS } from '@/services/mock/seed';
+import { SENHA_DEMO, USUARIOS, USUARIOS_SELETOR } from '@/services/mock/seed';
 import { ApiError } from '@/types/api';
 import { rotuloUsuario } from '@/utils/constants';
 
@@ -154,14 +154,14 @@ export default function LoginPage() {
         <div className="mt-8 rounded-card border border-dashed border-bb-line-2 bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wider text-bb-muted">Login simulado · entrar como</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            {[1, 2, 7, 8].map((id) => USUARIOS.find((x) => x.id === id)!).map((u) => (
+            {USUARIOS_SELETOR.map((id) => USUARIOS.find((x) => x.id === id)!).map((u) => (
               <button
                 key={u.id}
                 type="button"
                 className="rounded-lg border border-bb-line px-3 py-2 text-left transition hover:border-bb-blue hover:bg-bb-blue-light"
                 onClick={() => {
                   setEmail(u.email);
-                  setSenha('sigespin123');
+                  setSenha(SENHA_DEMO);
                   setErro(null);
                 }}
               >
@@ -170,7 +170,9 @@ export default function LoginPage() {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-bb-muted">Senha dos usuários de teste: definida em src/services/mock/seed.ts</p>
+          <p className="mt-2 text-[11px] text-bb-muted">
+            Dois Demandantes mostram a diferença entre ser o responsável pelo projeto e só ter o mesmo perfil. Ao trocar de usuário, os registros da demonstração continuam.
+          </p>
         </div>
       )}
     </AuthShell>

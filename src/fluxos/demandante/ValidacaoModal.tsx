@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 
-import { Campo } from '@/components/common/ui';
+import { Campo, Selo } from '@/components/common/ui';
 import { FormularioConfirmado, Opcoes } from '@/components/projeto/formulario';
 import { entregaService } from '@/services';
 import type { Entrega, ResultadoValidacao } from '@/types/domain';
-import { VALIDACAO_LABEL } from '@/utils/constants';
-import { formatarTamanho } from '@/utils/formatters';
+import { VALIDACAO_BADGE, VALIDACAO_LABEL } from '@/utils/constants';
+import { formatarDataHora } from '@/utils/formatters';
 
-// ---------------- Validação de entrega (Demandante) ----------------
+// ---------------- Validação de entrega (Demandante responsável) ----------------
+// Cada manifestação gera um novo registro; as validações anteriores são preservadas.
 
 export function ValidacaoModal({ entrega, onFechar, onFeito }: { entrega: Entrega | null; onFechar: () => void; onFeito: () => void }) {
   const [resultado, setResultado] = useState<ResultadoValidacao>('VALIDADA');
@@ -21,46 +22,43 @@ export function ValidacaoModal({ entrega, onFechar, onFeito }: { entrega: Entreg
   }, [entrega]);
 
   if (!entrega) return null;
+  const anterior = entrega.validacoes[0];
   return (
     <FormularioConfirmado
       aberto
       onFechar={onFechar}
       onAtualizar={onFeito}
-      titulo={entrega.ehMvp ? 'Validar MVP' : 'Validar entrega'}
-      descricao={entrega.titulo}
+      titulo={anterior ? 'Nova validação da entrega' : 'Validar entrega'}
+      descricao={entrega.projetoTitulo}
       largura="max-w-2xl"
       validar={() => {
-        const min = resultado === 'VALIDADA' ? 5 : 15;
-        if (observacoes.trim().length < min) {
-          setErro(resultado === 'VALIDADA' ? 'Escreva as observações.' : 'Explique as ressalvas ou o motivo de não validar.');
+        if (!observacoes.trim()) {
+          setErro('As observações são obrigatórias.');
           return false;
         }
         return true;
       }}
       resumo={() => [
-        ['Entrega', entrega.titulo],
+        ['Entrega', entrega.descricao],
         ['Resultado', VALIDACAO_LABEL[resultado]],
         ['Observações', observacoes],
       ]}
-      aviso="A validação fica registrada no histórico da entrega. Ela não muda o TRL nem a etapa do Kanban."
+      aviso={anterior ? 'A validação anterior continua registrada; esta será a manifestação mais recente.' : 'A validação fica registrada na entrega. Ela não muda o TRL nem a etapa do Kanban.'}
       enviar={async () => {
         await entregaService.validar(entrega.id, { resultado, observacoes });
-        return `Validação registrada (${VALIDACAO_LABEL[resultado].toLowerCase()}). Próximo responsável: ${entrega.registradaPor.nome} (Analista).`;
+        return `Validação registrada (${VALIDACAO_LABEL[resultado].toLowerCase()}). ${entrega.registradaPor.nome} verá o retorno.`;
       }}
       rotuloConfirmar="Registrar validação"
     >
       {() => (
         <>
           <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm">
+            <p className="eyebrow">Entrega #{entrega.id} · {entrega.registradaPor.nome}</p>
             <p className="text-slate-700">{entrega.descricao}</p>
-            {entrega.evidencias.length > 0 && (
-              <ul className="text-xs text-bb-muted">
-                {entrega.evidencias.map((e) => (
-                  <li key={e.id}>
-                    {e.nomeArquivo} · {formatarTamanho(e.tamanhoBytes)}
-                  </li>
-                ))}
-              </ul>
+            {anterior && (
+              <p className="flex flex-wrap items-center gap-2 text-xs text-bb-muted">
+                Última validação: <Selo classe={VALIDACAO_BADGE[anterior.resultado]}>{VALIDACAO_LABEL[anterior.resultado]}</Selo> em {formatarDataHora(anterior.em)}
+              </p>
             )}
           </div>
           <Opcoes

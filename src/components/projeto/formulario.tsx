@@ -10,7 +10,8 @@ import { formatarTamanho } from '@/utils/formatters';
 
 // ---------------- Formulário com revisão e confirmação ----------------
 // 1) o usuário preenche; 2) revisa um resumo; 3) confirma. Depois do sucesso, a mensagem diz
-// o que mudou e quem é o próximo responsável. Conflito (409) oferece recarregar.
+// o que mudou e quem é o próximo responsável. Conflito (409) oferece recarregar; com aoConflitar,
+// o formulário continua aberto com o rascunho para revisar a versão mais recente.
 
 interface EstadoEnvio {
   enviando: boolean;
@@ -31,6 +32,7 @@ export function FormularioConfirmado({
   enviar,
   rotuloConfirmar,
   perigo,
+  aoConflitar,
   children,
 }: {
   aberto: boolean;
@@ -45,6 +47,7 @@ export function FormularioConfirmado({
   enviar: () => Promise<string>;
   rotuloConfirmar: string;
   perigo?: boolean;
+  aoConflitar?: () => void;
   children: (f: EstadoEnvio) => ReactNode;
 }) {
   const [revisando, setRevisando] = useState(false);
@@ -71,7 +74,11 @@ export function FormularioConfirmado({
       onAtualizar();
       onFechar();
     } catch (er) {
-      if (er instanceof ApiError && er.status === 409) {
+      if (er instanceof ApiError && er.status === 409 && aoConflitar) {
+        toast.error(er.message, { duration: 8000 });
+        setRevisando(false);
+        aoConflitar();
+      } else if (er instanceof ApiError && er.status === 409) {
         toast.error(er.message, { action: { label: 'Recarregar', onClick: onAtualizar }, duration: 10000 });
         onFechar();
       } else if (er instanceof ApiError && ['UPLOAD_FALHOU', 'TIPO_INVALIDO', 'TAMANHO_INVALIDO'].includes(er.codigo)) {
