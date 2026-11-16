@@ -1,24 +1,9 @@
-# SIGES-PIN — Front-end · branch `especialista-seguranca`
+# SIGES-PIN — Front-end
 
 Front-end do Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS.
 React 18 + Vite + TypeScript + Tailwind CSS 3.4. Regras da **Fase 3** ([docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md)).
 
-Esta branch é o **zip 3** da divisão da equipe (Abraão): a base comum do site mais **governança, quadro, portfólio e minha fila**. As telas dos outros integrantes chegam pelas branches deles (veja [Divisão da equipe](#divisão-da-equipe)).
-
-## O que esta branch tem
-
-| Arquivo | O que mudou |
-|---|---|
-| `src/fluxos/governanca/DecisaoModal.tsx` | Decisão APROVAR ou REJEITAR com justificativa; aprovar revalida o percurso, move o cartão e gera notificação. |
-| `src/fluxos/governanca/CancelamentoModal.tsx` | Novo: cancelar pedido de avanço com justificativa (Analista no próprio pedido, Especialista em qualquer um); o cartão fica onde está. |
-| `src/fluxos/governanca/projeto.tsx` | Botões Decidir avanço e Cancelar pedido. |
-| `src/fluxos/governanca/fila.tsx` | Pedidos aguardando decisão e propostas de configuração pendentes. |
-| `src/fluxos/governanca/KanbanConfigPage.tsx` | Reescrita: o Especialista cria colunas (código, nome, ordem, tipo terminal) e percursos, e edita nome, ordem, ativa e governança com a versão vigente. Bloqueia desativar a coluna inicial, coluna ocupada ou referenciada e percurso com pedido pendente. Os demais perfis consultam. |
-| `src/fluxos/governanca/PerfilPage.tsx` | Matriz de permissões da Fase 3 com a condição adicional de cada ação. |
-| `src/pages/app/PortfolioPage.tsx` | Compartilhada: filtro de arquivamento (ativos, arquivados, todos), colunas de arena e responsáveis e selo de arquivado. |
-| `src/pages/app/MinhaFilaPage.tsx` | Compartilhada: sem mudança de código; recebe as seções novas de cada fluxo. |
-
-Telas compartilhadas sob responsabilidade desta branch: `src/pages/app/PortfolioPage.tsx`, `src/pages/app/MinhaFilaPage.tsx`.
+O projeto é um **protótipo navegável**: o acesso, os dados e a IA são simulados no navegador, e as regras de negócio seguem o guia da Fase 3. A visão geral completa do site (fluxos, telas, regras, cores e código) está em [todo.md](todo.md).
 
 ## Como rodar
 
@@ -29,34 +14,58 @@ npm run dev        # http://localhost:3000
 npm run build      # checagem de tipos + build de produção
 ```
 
-**Modo demonstração.** É o padrão (`VITE_USE_MOCK=true` no `.env`): o app usa um banco no navegador que aplica as regras da Fase 3. A chave é `@SIGES_PIN:mockdb:v5`.
+**Modo demonstração.** É o padrão (`VITE_USE_MOCK=true` no `.env`): o app usa um banco no navegador que aplica as regras da Fase 3. Cada navegador tem os próprios dados; para voltar ao estado inicial, use **Restaurar dados** em Meu perfil ou na tela de entrada.
 
-**Usuários de teste.** Ficam em `src/services/mock/seed.ts`, junto com a senha: Mariana Costa e Bruno Alves (Demandantes), Rafael Lima (Analista), Fernanda Rocha e João Prado (Especialistas). Para esta branch, entre como **Fernanda Rocha (Especialista · Segurança da informação)**.
+**Back-end real.** Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`. As rotas da API ainda são propostas e ficam em `src/services/index.ts`.
 
-**Restaurar os dados.** Em **Meu perfil** ou na tela de entrada “Entrar como”, use **Restaurar dados**.
+## Usuários de teste
 
-**Back-end real.** Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`.
+Entre pela tela de login, usando os botões de “Login simulado”. A senha fica em `src/services/mock/seed.ts`.
 
-## Como os fluxos se encaixam
+| Perfil | Nome | Para que serve |
+|---|---|---|
+| Demandante | Mariana Costa | Responsável por várias demandas |
+| Demandante | Bruno Alves | Mostra a diferença entre ser o responsável e só ter o mesmo perfil |
+| Analista | Rafael Lima | Conduz as iniciativas |
+| Especialista | Fernanda Rocha | Segurança da informação |
+| Especialista | João Prado | Dados e IA; só o destinatário responde a uma consulta |
 
-Cada fluxo fica em `src/fluxos/<pasta>/` e pode ter `rotas.tsx` (páginas e menu), `fila.tsx` (seção da Minha fila) e `projeto.tsx` (botões e formulários do Detalhe do projeto). A base encontra os fluxos sozinha, então esta branch roda sozinha:
-- sem o zip 1, o `/login` vira a entrada simplificada “Entrar como”;
-- sem o zip 4, a página inicial da área logada é a Minha fila.
+Trocar de usuário mantém os registros, para um perfil continuar o trabalho do outro.
 
-## Divisão da equipe
+## O que o site tem
 
-| Zip / branch | Integrante | Login de teste | Pastas |
-|---|---|---|---|
-| 1 · `fluxo-demandante-acesso` | Kaua | Mariana Costa | `acesso/`, `demandante/`, `recomendacoes/` |
-| 2 · `fluxo-analista` | Lucas | Rafael Lima | `analista/`, `propostas/` |
-| **3 · `especialista-seguranca` (esta)** | Abraão | Fernanda Rocha | `governanca/` |
-| 4 · `especialista-dados-e-ia` | Angelo | João Prado | `parecer/`, `gestao/`, `visao-geral/` |
+| Parte | Pastas em `src/fluxos/` | Telas e ações |
+|---|---|---|
+| Acesso | `acesso/` | Landing, login e cadastro (pedido de acesso) |
+| Demandante | `demandante/`, `recomendacoes/` | Nova demanda, converter recomendação, validar entrega, registrar correção, recomendações |
+| Analista | `analista/`, `propostas/` | Qualificação, consulta a Especialista, registrar TRL, movimentar (direto ou pedido de avanço), submeter entrega, propostas de configuração |
+| Governança | `governanca/` | Decidir e cancelar pedidos de avanço, configuração do quadro, Meu perfil (matriz de permissões) |
+| Parecer e gestão | `parecer/`, `gestao/` | Emitir parecer, editar projeto, arquivar e reativar |
+| Visão geral | `visao-geral/` | Dashboard, ações de mobilização, notificações |
 
-**Regra do grupo.** Cada pessoa altera só as suas pastas e as telas compartilhadas que são dela. A base é igual nas quatro branches; mudanças nela precisam ser combinadas com o grupo.
+As telas compartilhadas ficam em `src/pages/app/`: **Portfólio**, **Minha fila** e **Detalhe do projeto** (10 abas).
+
+Cada fluxo é uma pasta que a base encontra sozinha (`rotas.tsx`, `fila.tsx` e `projeto.tsx`), sem registro manual. Os detalhes estão em [todo.md](todo.md), na seção “Organização do código”.
+
+## Equipe
+
+| Integrante | Pastas | Telas compartilhadas sob sua responsabilidade |
+|---|---|---|
+| Kaua | `acesso/`, `demandante/`, `recomendacoes/` | — |
+| Lucas | `analista/`, `propostas/` | — |
+| Abraão | `governanca/` | `PortfolioPage.tsx`, `MinhaFilaPage.tsx` |
+| Angelo | `parecer/`, `gestao/`, `visao-geral/` | `ProjetoDetalhesPage.tsx` |
+
+Cada pessoa altera só as suas pastas e as telas compartilhadas que são dela. Mudanças na base (`src/types`, `src/services`, `src/utils`, `src/components`) precisam ser combinadas com o grupo.
+
+## Publicação
+
+O site é uma aplicação de página única e pode ser publicado na Vercel: framework Vite, build `npm run build`, saída `dist`, pasta raiz `./`. O arquivo `vercel.json` faz as rotas (como `/app/portfolio`) funcionarem ao recarregar a página. Não são necessárias variáveis de ambiente no modo demonstração.
 
 ## Documentação
 
-- [todo.md](todo.md): o site inteiro, com fluxos, telas, regras, cores e organização do código.
+- [todo.md](todo.md): o site inteiro, com fluxos, telas, regras, cores, design e organização do código.
 - [docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md): o guia de regras de negócio da Fase 3.
-- [docs/FASE3_MUDANCAS.md](docs/FASE3_MUDANCAS.md): o que mudou, por integrante.
-- A pasta `sigespin/` é outro projeto Vite que veio da `main` e não é alterado por esta branch.
+- [docs/FASE3_MUDANCAS.md](docs/FASE3_MUDANCAS.md): o que mudou na Fase 3, por integrante.
+- [docs/RELATORIO_MUDANCAS.md](docs/RELATORIO_MUDANCAS.md) e [docs/PROPOSTA_FRONTEND.md](docs/PROPOSTA_FRONTEND.md): documentos das versões anteriores.
+- A pasta `sigespin/` é um projeto Vite separado, do Dashboard Executivo inicial; ele não faz parte deste front-end.
