@@ -3,27 +3,23 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Campo } from '@/components/common/ui';
 import { FormularioConfirmado, type ModalBaseProps } from '@/components/projeto/formulario';
 import { projetoService } from '@/services';
+import type { QualificacaoRequest } from '@/types/domain';
 import { CRITERIOS_QUALIFICACAO } from '@/utils/constants';
 
-import { SeletorTrl } from './SeletorTrl';
-
 // ---------------- Qualificação (Analista) ----------------
+// Sete textos obrigatórios. Cada qualificação é um novo registro com autoria e data; o histórico é preservado.
+
+const VAZIO: QualificacaoRequest = { aderenciaTese: '', relevancia: '', grauInovacao: '', viabilidade: '', maturidadeTecnologica: '', fundamentacao: '', conclusao: '' };
 
 export function QualificacaoModal({ projeto, aberto, onFechar, onFeito }: ModalBaseProps) {
-  const vazio = { aderenciaTese: '', relevancia: '', grauInovacao: '', viabilidade: '' };
-  const [criterios, setCriterios] = useState(vazio);
-  const [trl, setTrl] = useState(projeto.trlAtual);
-  const [conclusao, setConclusao] = useState('');
+  const [form, setForm] = useState<QualificacaoRequest>(VAZIO);
   const [erros, setErros] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (aberto) {
-      setCriterios(vazio);
-      setTrl(projeto.trlAtual);
-      setConclusao('');
+      setForm(VAZIO);
       setErros({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto]);
 
   return (
@@ -36,16 +32,15 @@ export function QualificacaoModal({ projeto, aberto, onFechar, onFeito }: ModalB
       largura="max-w-2xl"
       validar={() => {
         const e: Record<string, string> = {};
-        for (const c of CRITERIOS_QUALIFICACAO) if (criterios[c.chave].trim().length < 5) e[c.chave] = 'Descreva este critério.';
-        if (conclusao.trim().length < 20) e.conclusao = 'Escreva a fundamentação e a conclusão (mínimo de 20 caracteres).';
+        for (const c of CRITERIOS_QUALIFICACAO) if (!form[c.chave].trim()) e[c.chave] = 'Campo obrigatório.';
         setErros(e);
         return !Object.keys(e).length;
       }}
-      resumo={() => [...CRITERIOS_QUALIFICACAO.map((c) => [c.label, criterios[c.chave]] as [string, ReactNode]), ['Maturidade (TRL)', `TRL ${trl}`], ['Fundamentação e conclusão', conclusao]]}
-      aviso="A qualificação registra a análise; não movimenta o Kanban nem altera o TRL do projeto. Para isso, use as ações próprias."
+      resumo={() => CRITERIOS_QUALIFICACAO.map((c) => [c.label, form[c.chave]] as [string, ReactNode])}
+      aviso="A qualificação registra a análise. Ela não movimenta o Kanban nem altera o TRL do projeto."
       enviar={async () => {
-        await projetoService.qualificar(projeto.id, { ...criterios, trlAvaliado: trl, conclusao });
-        return 'Qualificação registrada. Próximo passo: consultar um Especialista, se necessário, ou propor a transição no Kanban.';
+        await projetoService.qualificar(projeto.id, form);
+        return 'Qualificação registrada. Próximo passo: consultar um Especialista, registrar o TRL ou movimentar no Kanban.';
       }}
       rotuloConfirmar="Registrar qualificação"
     >
@@ -53,15 +48,9 @@ export function QualificacaoModal({ projeto, aberto, onFechar, onFeito }: ModalB
         <>
           {CRITERIOS_QUALIFICACAO.map((c) => (
             <Campo key={c.chave} label={c.label} dica={c.dica} erro={erros[c.chave]} htmlFor={`q-${c.chave}`}>
-              <textarea id={`q-${c.chave}`} rows={2} className="input" value={criterios[c.chave]} onChange={(e) => setCriterios({ ...criterios, [c.chave]: e.target.value })} />
+              <textarea id={`q-${c.chave}`} rows={c.chave === 'fundamentacao' || c.chave === 'conclusao' ? 3 : 2} className="input" value={form[c.chave]} onChange={(e) => setForm({ ...form, [c.chave]: e.target.value })} />
             </Campo>
           ))}
-          <Campo label="Maturidade avaliada (TRL)" dica="Registro da análise. Para alterar o TRL do projeto, use “Registrar avaliação TRL”.">
-            <SeletorTrl valor={trl} onChange={setTrl} atual={projeto.trlAtual} />
-          </Campo>
-          <Campo label="Fundamentação e conclusão" erro={erros.conclusao} htmlFor="q-conclusao">
-            <textarea id="q-conclusao" rows={4} className="input" value={conclusao} onChange={(e) => setConclusao(e.target.value)} />
-          </Campo>
         </>
       )}
     </FormularioConfirmado>

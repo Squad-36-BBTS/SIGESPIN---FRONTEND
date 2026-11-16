@@ -1,84 +1,60 @@
-# SIGES-PIN
+# SIGES-PIN — Front-end · branch `fluxo-analista`
 
-**Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS**
+Front-end do Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS.
+React 18 + Vite + TypeScript + Tailwind CSS 3.4. Regras da **Fase 3** ([docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md)).
 
-> Versão: 1.0 (Camada de Domínio – Entidades, Enums, Repositórios e Migration)
-> Autor: equipe SIGES‑PIN – Back‑end
+Esta branch é o **zip 2** da divisão da equipe (Lucas): a base comum do site mais **analista e propostas de configuração**. As telas dos outros integrantes chegam pelas branches deles (veja [Divisão da equipe](#divisão-da-equipe)).
 
-## 📖 Visão Geral
+## O que esta branch tem
 
-O SIGES‑PIN gerencia o ciclo completo de projetos de inovação, desde a captura de demandas (Intake com IA) até a governança, auditoria e entrega de evidências.  Ele está alinhado ao normativo **PRO663‑009** da BBTS e segue a arquitetura **Spring Boot 3.x**, **Java 21**, **PostgreSQL** e **Flyway** para migrações.
+| Arquivo | O que mudou |
+|---|---|
+| `src/fluxos/analista/QualificacaoModal.tsx` | Sete textos obrigatórios (inclui maturidade tecnológica e fundamentação separada da conclusão). Não altera etapa nem TRL. |
+| `src/fluxos/analista/ConsultaModal.tsx` | Escolha obrigatória de um Especialista ativo e a questão. Pode ser aberta antes da qualificação. |
+| `src/fluxos/analista/AvaliacaoTrlModal.tsx` | Nível, justificativa e seleção de ao menos uma evidência do projeto. Também disponível para o Especialista. |
+| `src/fluxos/analista/MovimentacaoModal.tsx` | Ao escolher o destino, oferece movimentação direta (percurso livre, ou Especialista em qualquer percurso) ou pedido de avanço (Analista em percurso governado, com evidências). |
+| `src/fluxos/analista/EntregaModal.tsx` | Submeter entrega só com a descrição. Também disponível para o Especialista. |
+| `src/fluxos/analista/projeto.tsx` | Botões conforme a nova matriz. |
+| `src/fluxos/analista/fila.tsx` | Pedidos pendentes e encerrados (aprovados, rejeitados e cancelados), pareceres recebidos, validações recebidas e propostas próprias. |
+| `src/fluxos/propostas/` | Novo: página de propostas de configuração com filtro por status e tipo; propor coluna ou percurso (Analista); aprovar, rejeitar ou cancelar (Especialista; o Analista cancela a própria). |
 
-## ✨ Principais Funcionalidades
+## Como rodar
 
-- **Intake Inteligente** – Integração com Google Gemini (gemini‑1.5‑flash) para sugestão de arena, hipótese, TRL inicial e scores de radar.
-- **Funil de Inovação** – Controle estrito de estágios (`IDEACAO → POC → MVP → CONCLUIDO / DESCONTINUADO`).
-- **Governança** – Deliberações do Comitê (`APROVADO`, `PIVOTADO`, `REPROVADO`).
-- **Auditoria** – Log de todas as mudanças de **status** e **TRL** (`HistoricoTransicoes`).
-- **Evidências** – Upload de arquivos para **AWS S3** com referência armazenada no banco.
-- **Segurança** – JWT (jjwt) + Spring Security, perfis de acesso (`DEMANDANTE`, `ANALISTA`, `COMITE`, `EXECUTIVO`).
-- **Métricas** – Dashboard com contagens e médias via consultas SQL.
-
-## 🏛️ Arquitetura
-
-- **Camada de Domínio** – Entidades JPA, Enums, Repositórios e migração Flyway (documentada em `DOCUMENTACAO_FASE1_DOMINIO.md`).
-- **Camada de Serviço** – (a ser implementada) regras de negócio, validações e integração com a IA.
-- **Camada de API** – (a ser implementada) controladores REST seguindo o contrato descrito no *Master Spec*.
-- **Persistência** – PostgreSQL 16+ hospedado no Supabase, versionado com Flyway.
-- **CI/CD** – Recomenda‑se GitHub Actions para build/teste e deployment.
-
-## 🛠️ Pré‑requisitos
-
-| Ferramenta | Versão mínima |
-|------------|---------------|
-| **Java**   | 21 (ou JBR 25) |
-| **Maven**  | 3.9.x (wrapper incluído) |
-| **PostgreSQL** | 16 |
-| **Git**    | qualquer versão recente |
-
-> **Importante:** O projeto usa o *Maven Wrapper* (`./mvnw`), portanto não é necessário ter o Maven instalado localmente.
-
-## 🚀 Como Executar
-
-1. **Clonar o repositório**
-   ```bash
-   git clone <REPO_URL>
-   cd sigespin
-   ```
-
-2. **Configurar o Banco**
-   - Crie um banco PostgreSQL chamado `sigespin`.
-   - Defina as credenciais no `src/main/resources/application.properties` (ou, preferencialmente, use variáveis de ambiente `DB_USERNAME`, `DB_PASSWORD`).
-   - O Flyway criará as tabelas na primeira inicialização.
-
-3. **Compilar e Executar**
-   ```bash
-   # Usa o wrapper incluído
-   ./mvnw clean install      # compila e executa os testes
-   ./mvnw spring-boot:run    # inicia a aplicação
-   ```
-   A aplicação ficará disponível em `http://localhost:8080/api`.
-
-4. **Verificar as Migrations**
-   O Flyway registra as migrations na tabela `flyway_schema_history`.  Caso precise resetar o banco (ambiente local), basta dropar o schema e reiniciar a aplicação.
-
-## 🧪 Testes
-
-Os testes unitários e de integração estão localizados em `src/test/java`.  Para executá‑los:
 ```bash
-./mvnw test
+cp .env.example .env
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # checagem de tipos + build de produção
 ```
 
-## 📚 Documentação Técnica
+**Modo demonstração.** É o padrão (`VITE_USE_MOCK=true` no `.env`): o app usa um banco no navegador que aplica as regras da Fase 3. A chave é `@SIGES_PIN:mockdb:v5`.
 
-- **Master Spec (Back‑end)** – [`SIGES-PIN_ Master Spec Back-end.md`](./SIGES-PIN_%20Master%20Spec%20Back-end.md)
-- **Documentação da Camada de Domínio** – [`DOCUMENTACAO_FASE1_DOMINIO.md`](./DOCUMENTACAO_FASE1_DOMINIO.md)
+**Usuários de teste.** Ficam em `src/services/mock/seed.ts`, junto com a senha: Mariana Costa e Bruno Alves (Demandantes), Rafael Lima (Analista), Fernanda Rocha e João Prado (Especialistas). Para esta branch, entre como **Rafael Lima (Analista)**.
 
-## 🤝 Contribuição
+**Restaurar os dados.** Em **Meu perfil** ou na tela de entrada “Entrar como”, use **Restaurar dados**.
 
-1. Fork o repositório.
-2. Crie uma branch para sua feature (`git checkout -b feature/minha-feature`).
-3. Commit suas mudanças (`git commit -m "feat: descrição"`).
-4. Abra um Pull Request.
+**Back-end real.** Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`.
 
-> **Boa prática:** mantenha os comentários de commit claros e siga o padrão Conventional Commits.
+## Como os fluxos se encaixam
+
+Cada fluxo fica em `src/fluxos/<pasta>/` e pode ter `rotas.tsx` (páginas e menu), `fila.tsx` (seção da Minha fila) e `projeto.tsx` (botões e formulários do Detalhe do projeto). A base encontra os fluxos sozinha, então esta branch roda sozinha:
+- sem o zip 1, o `/login` vira a entrada simplificada “Entrar como”;
+- sem o zip 4, a página inicial da área logada é a Minha fila.
+
+## Divisão da equipe
+
+| Zip / branch | Integrante | Login de teste | Pastas |
+|---|---|---|---|
+| 1 · `fluxo-demandante-acesso` | Kaua | Mariana Costa | `acesso/`, `demandante/`, `recomendacoes/` |
+| **2 · `fluxo-analista` (esta)** | Lucas | Rafael Lima | `analista/`, `propostas/` |
+| 3 · `especialista-seguranca` | Abraão | Fernanda Rocha | `governanca/` |
+| 4 · `especialista-dados-e-ia` | Angelo | João Prado | `parecer/`, `gestao/`, `visao-geral/` |
+
+**Regra do grupo.** Cada pessoa altera só as suas pastas e as telas compartilhadas que são dela. A base é igual nas quatro branches; mudanças nela precisam ser combinadas com o grupo.
+
+## Documentação
+
+- [todo.md](todo.md): o site inteiro, com fluxos, telas, regras, cores e organização do código.
+- [docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md): o guia de regras de negócio da Fase 3.
+- [docs/FASE3_MUDANCAS.md](docs/FASE3_MUDANCAS.md): o que mudou, por integrante.
+- A pasta `sigespin/` é outro projeto Vite que veio da `main` e não é alterado por esta branch.

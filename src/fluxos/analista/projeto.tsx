@@ -1,6 +1,6 @@
 import { ArrowRight, ClipboardList, Gauge, MessagesSquare, PackageCheck } from 'lucide-react';
 
-import { negado, noProjeto, valorMatriz, visivelPara } from '@/utils/permissoes';
+import { negado, noProjeto, visivelPara } from '@/utils/permissoes';
 
 import type { AcaoProjeto, CtxProjeto } from '../tipos';
 import { AvaliacaoTrlModal } from './AvaliacaoTrlModal';
@@ -9,18 +9,17 @@ import { EntregaModal } from './EntregaModal';
 import { MovimentacaoModal } from './MovimentacaoModal';
 import { QualificacaoModal } from './QualificacaoModal';
 
-// Movimentar: depende das transições configuradas a partir da etapa atual
+// Movimentar: o modal decide entre movimentação direta e pedido de avanço; aqui só se confere o projeto
 function permMover({ p, usuario, pendente }: CtxProjeto) {
-  // Quem não solicita transições (Especialista) só poderia mover sem governança, que está "a definir"
-  const acao = valorMatriz('solicitarTransicao', usuario.perfil) !== 'SIM' || p.transicoesDisponiveis.some((t) => !t.exigeGovernanca) ? 'moverSemGovernanca' : 'solicitarTransicao';
+  const acao = usuario.perfil === 'ANALISTA' && p.transicoesDisponiveis.every((t) => t.exigeGovernanca) ? 'solicitarAvanco' : 'moverDireto';
   const base = noProjeto(acao, usuario, p, { solicitacaoPendente: !!pendente });
   if (!base.permitido) return base;
-  if (!p.transicoesDisponiveis.length) return negado(`Não há transições configuradas a partir de ${p.etapa.nome}.`);
+  if (!p.transicoesDisponiveis.length) return negado(`Não há percursos ativos a partir de ${p.etapa.nome}.`);
   return base;
 }
 
-// Analista: qualificar, consultar Especialista, avaliar TRL, movimentar o Kanban e publicar entregas.
-// O Especialista também vê as ações "a definir" para ele (TRL, mover, entrega), desabilitadas.
+// Analista: qualificar, consultar Especialista, registrar TRL, movimentar e submeter entregas.
+// O Especialista também registra TRL, movimenta e submete entregas (guia, matriz de permissões).
 const acoes: AcaoProjeto[] = [
   {
     id: 'qualificar',
@@ -52,17 +51,14 @@ const acoes: AcaoProjeto[] = [
   {
     id: 'movimentar',
     ordem: 40,
-    botao: (c) =>
-      visivelPara('solicitarTransicao', c.usuario.perfil) || visivelPara('moverSemGovernanca', c.usuario.perfil)
-        ? { perm: permMover(c), rotulo: 'Movimentar no Kanban', icon: <ArrowRight className="h-4 w-4" /> }
-        : null,
+    botao: (c) => (visivelPara('moverDireto', c.usuario.perfil) ? { perm: permMover(c), rotulo: 'Movimentar no Kanban', icon: <ArrowRight className="h-4 w-4" /> } : null),
     Modal: MovimentacaoModal,
   },
   {
     id: 'submeterEntrega',
     ordem: 50,
     botao: ({ p, usuario }) =>
-      visivelPara('submeterEntrega', usuario.perfil) ? { perm: noProjeto('submeterEntrega', usuario, p), rotulo: 'Publicar entrega', icon: <PackageCheck className="h-4 w-4" /> } : null,
+      visivelPara('submeterEntrega', usuario.perfil) ? { perm: noProjeto('submeterEntrega', usuario, p), rotulo: 'Submeter entrega', icon: <PackageCheck className="h-4 w-4" /> } : null,
     Modal: EntregaModal,
   },
 ];

@@ -1,8 +1,9 @@
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Anexos, Campo } from '@/components/common/ui';
-import { FormularioConfirmado, nomesArquivos, type ModalBaseProps } from '@/components/projeto/formulario';
+import { Campo } from '@/components/common/ui';
+import { nomesEvidencias, SeletorEvidencias } from '@/components/projeto/evidencias';
+import { FormularioConfirmado, type ModalBaseProps } from '@/components/projeto/formulario';
 import { projetoService } from '@/services';
 import type { ScoresRadar } from '@/types/domain';
 import { RADAR_EIXOS } from '@/utils/constants';
@@ -10,24 +11,25 @@ import { formatarScore } from '@/utils/formatters';
 
 import { SeletorTrl } from './SeletorTrl';
 
-// ---------------- Avaliação de TRL (Analista) ----------------
+// ---------------- Avaliação de TRL (Analista e Especialista) ----------------
+// Nível de 1 a 9 (pode subir, cair ou se manter), justificativa e ao menos uma evidência do projeto.
 
 const CHAVES_RADAR: (keyof ScoresRadar)[] = ['negocio', 'produto', 'time', 'receita'];
 
 export function AvaliacaoTrlModal({ projeto, aberto, onFechar, onFeito }: ModalBaseProps) {
-  const [trl, setTrl] = useState(projeto.trlAtual);
+  const [nivel, setNivel] = useState(projeto.trlAtual);
   const [justificativa, setJustificativa] = useState('');
+  const [evidenciaIds, setEvidenciaIds] = useState<number[]>([]);
   const [comRadar, setComRadar] = useState(false);
   const [radar, setRadar] = useState<ScoresRadar>({ negocio: 2, produto: 2, time: 2, receita: 2 });
-  const [arquivos, setArquivos] = useState<File[]>([]);
   const [erros, setErros] = useState<Record<string, string>>({});
-  const reducao = trl < projeto.trlAtual;
+  const reducao = nivel < projeto.trlAtual;
 
   useEffect(() => {
     if (aberto) {
-      setTrl(projeto.trlAtual);
+      setNivel(projeto.trlAtual);
       setJustificativa('');
-      setArquivos([]);
+      setEvidenciaIds([]);
       setComRadar(false);
       setErros({});
     }
@@ -39,44 +41,46 @@ export function AvaliacaoTrlModal({ projeto, aberto, onFechar, onFeito }: ModalB
       onFechar={onFechar}
       onAtualizar={onFeito}
       titulo="Registrar avaliação TRL"
-      descricao="O TRL é um indicador de maturidade: pode subir ou descer, sempre com fundamentação e evidências."
+      descricao="O TRL é um indicador de maturidade: pode subir, cair ou se manter, sempre com justificativa e evidências do projeto."
       largura="max-w-2xl"
       validar={() => {
         const e: Record<string, string> = {};
-        const min = reducao ? 40 : 20;
-        if (justificativa.trim().length < min) e.justificativa = reducao ? 'Uma redução exige fundamentação detalhada (mínimo de 40 caracteres).' : 'Descreva os resultados que fundamentam a avaliação.';
-        if (!arquivos.length) e.arquivos = 'Anexe ao menos uma evidência pertinente.';
+        if (!justificativa.trim()) e.justificativa = 'A justificativa é obrigatória.';
+        if (!evidenciaIds.length) e.evidencias = 'Selecione ao menos uma evidência do projeto.';
         setErros(e);
         return !Object.keys(e).length;
       }}
       resumo={() => [
         ['TRL atual', `TRL ${projeto.trlAtual}`],
-        ['TRL avaliado', `TRL ${trl}${reducao ? ' (redução)' : trl === projeto.trlAtual ? ' (mantido)' : ''}`],
+        ['Nível registrado', `TRL ${nivel}${reducao ? ' (redução)' : nivel === projeto.trlAtual ? ' (mantido)' : ''}`],
         ['Justificativa', justificativa],
+        ['Evidências', nomesEvidencias(projeto.evidencias, evidenciaIds)],
         ['Radar 4D', comRadar ? CHAVES_RADAR.map((k, i) => `${RADAR_EIXOS[i]}: ${formatarScore(radar[k])}`).join(' · ') : 'Sem nova leitura'],
-        ['Evidências', nomesArquivos(arquivos)],
       ]}
-      aviso={reducao ? `Atenção: o TRL será reduzido de ${projeto.trlAtual} para ${trl}. A avaliação anterior continua no histórico.` : undefined}
+      aviso={reducao ? `O TRL será reduzido de ${projeto.trlAtual} para ${nivel}. Os dois níveis ficam no histórico.` : undefined}
       enviar={async () => {
-        await projetoService.avaliarTrl(projeto.id, { trlNovo: trl, justificativa, radar: comRadar ? radar : null, arquivos });
-        return trl === projeto.trlAtual ? `Avaliação registrada. TRL mantido em ${trl}.` : `TRL alterado de ${projeto.trlAtual} para ${trl}. A avaliação anterior segue no histórico.`;
+        await projetoService.avaliarTrl(projeto.id, { nivel, justificativa, evidenciaIds, radar: comRadar ? radar : null });
+        return nivel === projeto.trlAtual ? `Avaliação registrada. TRL mantido em ${nivel}.` : `TRL alterado de ${projeto.trlAtual} para ${nivel}. A avaliação fica no histórico.`;
       }}
       rotuloConfirmar="Registrar avaliação"
       perigo={reducao}
     >
-      {({ falhou, enviando, limparFalha }) => (
+      {() => (
         <>
           <Campo label={`Nível avaliado (atual: TRL ${projeto.trlAtual})`}>
-            <SeletorTrl valor={trl} onChange={setTrl} atual={projeto.trlAtual} />
+            <SeletorTrl valor={nivel} onChange={setNivel} atual={projeto.trlAtual} />
           </Campo>
           {reducao && (
             <p className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              Redução de TRL {projeto.trlAtual} para {trl}. Explique o que as evidências mostram.
+              Redução de TRL {projeto.trlAtual} para {nivel}. Explique o que as evidências mostram.
             </p>
           )}
           <Campo label="Justificativa" erro={erros.justificativa} htmlFor="t-just">
             <textarea id="t-just" rows={4} className="input" placeholder="Que testes, ambientes e resultados sustentam este nível?" value={justificativa} onChange={(e) => setJustificativa(e.target.value)} />
+          </Campo>
+          <Campo label="Evidências do projeto">
+            <SeletorEvidencias evidencias={projeto.evidencias} valor={evidenciaIds} onChange={setEvidenciaIds} erro={erros.evidencias} />
           </Campo>
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold">
@@ -99,18 +103,6 @@ export function AvaliacaoTrlModal({ projeto, aberto, onFechar, onFeito }: ModalB
               </div>
             )}
           </div>
-          <Campo label="Evidências">
-            <Anexos
-              arquivos={arquivos}
-              onChange={(f) => {
-                setArquivos(f);
-                limparFalha();
-              }}
-              erro={erros.arquivos}
-              falhou={falhou}
-              enviando={enviando}
-            />
-          </Campo>
         </>
       )}
     </FormularioConfirmado>
