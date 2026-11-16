@@ -1,22 +1,24 @@
-# SIGES-PIN — Front-end · branch `fluxo-analista`
+# SIGES-PIN — Front-end · branch `especialista-seguranca`
 
 Front-end do Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS.
 React 18 + Vite + TypeScript + Tailwind CSS 3.4. Regras da **Fase 3** ([docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md)).
 
-Esta branch é o **zip 2** da divisão da equipe (Lucas): a base comum do site mais **analista e propostas de configuração**. As telas dos outros integrantes chegam pelas branches deles (veja [Divisão da equipe](#divisão-da-equipe)).
+Esta branch é o **zip 3** da divisão da equipe (Abraão): a base comum do site mais **governança, quadro, portfólio e minha fila**. As telas dos outros integrantes chegam pelas branches deles (veja [Divisão da equipe](#divisão-da-equipe)).
 
 ## O que esta branch tem
 
 | Arquivo | O que mudou |
 |---|---|
-| `src/fluxos/analista/QualificacaoModal.tsx` | Sete textos obrigatórios (inclui maturidade tecnológica e fundamentação separada da conclusão). Não altera etapa nem TRL. |
-| `src/fluxos/analista/ConsultaModal.tsx` | Escolha obrigatória de um Especialista ativo e a questão. Pode ser aberta antes da qualificação. |
-| `src/fluxos/analista/AvaliacaoTrlModal.tsx` | Nível, justificativa e seleção de ao menos uma evidência do projeto. Também disponível para o Especialista. |
-| `src/fluxos/analista/MovimentacaoModal.tsx` | Ao escolher o destino, oferece movimentação direta (percurso livre, ou Especialista em qualquer percurso) ou pedido de avanço (Analista em percurso governado, com evidências). |
-| `src/fluxos/analista/EntregaModal.tsx` | Submeter entrega só com a descrição. Também disponível para o Especialista. |
-| `src/fluxos/analista/projeto.tsx` | Botões conforme a nova matriz. |
-| `src/fluxos/analista/fila.tsx` | Pedidos pendentes e encerrados (aprovados, rejeitados e cancelados), pareceres recebidos, validações recebidas e propostas próprias. |
-| `src/fluxos/propostas/` | Novo: página de propostas de configuração com filtro por status e tipo; propor coluna ou percurso (Analista); aprovar, rejeitar ou cancelar (Especialista; o Analista cancela a própria). |
+| `src/fluxos/governanca/DecisaoModal.tsx` | Decisão APROVAR ou REJEITAR com justificativa; aprovar revalida o percurso, move o cartão e gera notificação. |
+| `src/fluxos/governanca/CancelamentoModal.tsx` | Novo: cancelar pedido de avanço com justificativa (Analista no próprio pedido, Especialista em qualquer um); o cartão fica onde está. |
+| `src/fluxos/governanca/projeto.tsx` | Botões Decidir avanço e Cancelar pedido. |
+| `src/fluxos/governanca/fila.tsx` | Pedidos aguardando decisão e propostas de configuração pendentes. |
+| `src/fluxos/governanca/KanbanConfigPage.tsx` | Reescrita: o Especialista cria colunas (código, nome, ordem, tipo terminal) e percursos, e edita nome, ordem, ativa e governança com a versão vigente. Bloqueia desativar a coluna inicial, coluna ocupada ou referenciada e percurso com pedido pendente. Os demais perfis consultam. |
+| `src/fluxos/governanca/PerfilPage.tsx` | Matriz de permissões da Fase 3 com a condição adicional de cada ação. |
+| `src/pages/app/PortfolioPage.tsx` | Compartilhada: filtro de arquivamento (ativos, arquivados, todos), colunas de arena e responsáveis e selo de arquivado. |
+| `src/pages/app/MinhaFilaPage.tsx` | Compartilhada: sem mudança de código; recebe as seções novas de cada fluxo. |
+
+Telas compartilhadas sob responsabilidade desta branch: `src/pages/app/PortfolioPage.tsx`, `src/pages/app/MinhaFilaPage.tsx`.
 
 ## Como rodar
 
@@ -29,7 +31,7 @@ npm run build      # checagem de tipos + build de produção
 
 **Modo demonstração.** É o padrão (`VITE_USE_MOCK=true` no `.env`): o app usa um banco no navegador que aplica as regras da Fase 3. A chave é `@SIGES_PIN:mockdb:v5`.
 
-**Usuários de teste.** Ficam em `src/services/mock/seed.ts`, junto com a senha: Mariana Costa e Bruno Alves (Demandantes), Rafael Lima (Analista), Fernanda Rocha e João Prado (Especialistas). Para esta branch, entre como **Rafael Lima (Analista)**.
+**Usuários de teste.** Ficam em `src/services/mock/seed.ts`, junto com a senha: Mariana Costa e Bruno Alves (Demandantes), Rafael Lima (Analista), Fernanda Rocha e João Prado (Especialistas). Para esta branch, entre como **Fernanda Rocha (Especialista · Segurança da informação)**.
 
 **Restaurar os dados.** Em **Meu perfil** ou na tela de entrada “Entrar como”, use **Restaurar dados**.
 
@@ -46,8 +48,8 @@ Cada fluxo fica em `src/fluxos/<pasta>/` e pode ter `rotas.tsx` (páginas e menu
 | Zip / branch | Integrante | Login de teste | Pastas |
 |---|---|---|---|
 | 1 · `fluxo-demandante-acesso` | Kaua | Mariana Costa | `acesso/`, `demandante/`, `recomendacoes/` |
-| **2 · `fluxo-analista` (esta)** | Lucas | Rafael Lima | `analista/`, `propostas/` |
-| 3 · `especialista-seguranca` | Abraão | Fernanda Rocha | `governanca/` |
+| 2 · `fluxo-analista` | Lucas | Rafael Lima | `analista/`, `propostas/` |
+| **3 · `especialista-seguranca` (esta)** | Abraão | Fernanda Rocha | `governanca/` |
 | 4 · `especialista-dados-e-ia` | Angelo | João Prado | `parecer/`, `gestao/`, `visao-geral/` |
 
 **Regra do grupo.** Cada pessoa altera só as suas pastas e as telas compartilhadas que são dela. A base é igual nas quatro branches; mudanças nela precisam ser combinadas com o grupo.
