@@ -1,14 +1,14 @@
-import { Check, LogOut, Minus, RotateCcw, X } from 'lucide-react';
+import { Check, LogOut, RotateCcw, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { Avatar, PageHeader, SeloDiscussao } from '@/components/common/ui';
+import { Avatar, PageHeader } from '@/components/common/ui';
 import { useAuth } from '@/hooks';
 import { USE_MOCK } from '@/services/api';
 import { resetarMock } from '@/services/mock/mockServer';
 import type { PerfilUsuario } from '@/types/domain';
 import { PERFIL_DESCRICAO, PERFIL_LABEL, rotuloUsuario } from '@/utils/constants';
-import { ACAO_LABEL, ACOES_MATRIZ, valorMatriz } from '@/utils/permissoes';
+import { ACAO_CONDICAO, ACAO_LABEL, ACOES_MATRIZ, valorMatriz } from '@/utils/permissoes';
 
 const PERFIS: PerfilUsuario[] = ['DEMANDANTE', 'ANALISTA', 'ESPECIALISTA'];
 
@@ -42,11 +42,11 @@ export default function PerfilPage() {
 
         <section className="card overflow-hidden">
           <div className="p-6 pb-3">
-            <h2 className="font-bold">Papéis e ações</h2>
-            <p className="text-xs text-bb-muted">Todos os perfis consultam todo o portfólio. “A definir” ainda será validado com o cliente e aparece desabilitado nas telas.</p>
+            <h2 className="font-bold">Matriz de permissões</h2>
+            <p className="text-xs text-bb-muted">Regras da Fase 3. As telas mostram ou bloqueiam cada ação conforme o perfil, o vínculo com o projeto e o estado do registro.</p>
           </div>
           <div className="scroll-fino overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wider text-bb-muted">
                 <tr>
                   <th className="px-6 py-3">Ação</th>
@@ -55,16 +55,18 @@ export default function PerfilPage() {
                       {PERFIL_LABEL[p]}
                     </th>
                   ))}
+                  <th className="px-4 py-3">Condição adicional</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-bb-line">
                 <tr>
-                  <td className="px-6 py-2.5">Consultar projetos do portfólio</td>
+                  <td className="px-6 py-2.5">Consultar portfólio, detalhes, notificações, propostas e históricos</td>
                   {PERFIS.map((p) => (
                     <td key={p} className={`px-3 py-2.5 text-center ${p === usuario.perfil ? 'bg-bb-blue-light/50' : ''}`}>
                       <Check className="mx-auto h-4 w-4 text-emerald-600" aria-label="Sim" />
                     </td>
                   ))}
+                  <td className="px-4 py-2.5 text-xs text-bb-muted">Usuário ativo com acesso à demonstração</td>
                 </tr>
                 {ACOES_MATRIZ.map((a) => (
                   <tr key={a}>
@@ -73,25 +75,21 @@ export default function PerfilPage() {
                       const v = valorMatriz(a, p);
                       return (
                         <td key={p} className={`px-3 py-2.5 text-center ${p === usuario.perfil ? 'bg-bb-blue-light/50' : ''}`}>
-                          {v === 'SIM' ? (
+                          {v === 'Sim' ? (
                             <Check className="mx-auto h-4 w-4 text-emerald-600" aria-label="Sim" />
-                          ) : v === 'NAO' ? (
-                            <X className="mx-auto h-4 w-4 text-slate-300" aria-label="Não" />
+                          ) : v ? (
+                            <span className="text-[11px] font-semibold text-emerald-700">{v}</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700" aria-label="A definir">
-                              <Minus className="h-3 w-3" /> A definir
-                            </span>
+                            <X className="mx-auto h-4 w-4 text-slate-300" aria-label="Não" />
                           )}
                         </td>
                       );
                     })}
+                    <td className="px-4 py-2.5 text-xs text-bb-muted">{ACAO_CONDICAO[a]}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 border-t border-bb-line p-4 text-xs text-bb-muted">
-            <SeloDiscussao /> Dados financeiros: a política de exibição ainda não foi definida, então o protótipo não exibe o dispêndio estimado.
           </div>
         </section>
       </div>

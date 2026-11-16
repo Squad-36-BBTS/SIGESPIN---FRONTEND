@@ -2,15 +2,18 @@ import { ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Campo } from '@/components/common/ui';
+import { ListaEvidencias } from '@/components/projeto/evidencias';
 import { FormularioConfirmado, Opcoes } from '@/components/projeto/formulario';
 import { governancaService } from '@/services';
-import type { SolicitacaoTransicao } from '@/types/domain';
-import { formatarTamanho } from '@/utils/formatters';
+import type { DecisaoRequest, SolicitacaoTransicao } from '@/types/domain';
 
-// ---------------- Decisão de governança (Especialista) ----------------
+type Decisao = DecisaoRequest['decisao'];
 
-export function DecisaoModal({ solicitacao, decisaoInicial, onFechar, onFeito }: { solicitacao: SolicitacaoTransicao | null; decisaoInicial: 'APROVADA' | 'REJEITADA'; onFechar: () => void; onFeito: () => void }) {
-  const [decisao, setDecisao] = useState(decisaoInicial);
+// ---------------- Decisão de avanço (Especialista) ----------------
+// Aprovar revalida o percurso e muda a etapa. Rejeitar encerra o pedido sem mover o projeto.
+
+export function DecisaoModal({ solicitacao, decisaoInicial, onFechar, onFeito }: { solicitacao: SolicitacaoTransicao | null; decisaoInicial: Decisao; onFechar: () => void; onFeito: () => void }) {
+  const [decisao, setDecisao] = useState<Decisao>(decisaoInicial);
   const [justificativa, setJustificativa] = useState('');
   const [erro, setErro] = useState<string | null>(null);
 
@@ -27,30 +30,34 @@ export function DecisaoModal({ solicitacao, decisaoInicial, onFechar, onFeito }:
       aberto
       onFechar={onFechar}
       onAtualizar={onFeito}
-      titulo="Decidir transição com governança"
+      titulo="Decidir pedido de avanço"
       descricao={s.projetoTitulo}
       largura="max-w-2xl"
       validar={() => {
-        if (justificativa.trim().length < 10) {
+        if (!justificativa.trim()) {
           setErro('A justificativa da decisão é obrigatória.');
           return false;
         }
         return true;
       }}
       resumo={() => [
-        ['Transição', `${s.origem.nome} → ${s.destino.nome}`],
-        ['Decisão', decisao === 'APROVADA' ? 'Aprovar' : 'Rejeitar'],
+        ['Percurso', `${s.origem.nome} → ${s.destino.nome}`],
+        ['Decisão', decisao === 'APROVAR' ? 'Aprovar' : 'Rejeitar'],
         ['Justificativa', justificativa],
       ]}
-      aviso={decisao === 'APROVADA' ? `O projeto passa para ${s.destino.nome} e a movimentação fica no histórico.` : `O projeto permanece em ${s.origem.nome}. O Analista verá a sua justificativa.`}
+      aviso={
+        decisao === 'APROVAR'
+          ? `O percurso é revalidado; o projeto passa para ${s.destino.nome} e todos os perfis recebem uma notificação.`
+          : `O projeto permanece em ${s.origem.nome}. ${s.solicitante.nome} verá a sua justificativa.`
+      }
       enviar={async () => {
         await governancaService.decidir(s.id, { decisao, justificativa });
-        return decisao === 'APROVADA'
-          ? `Aprovada: projeto movido para ${s.destino.nome}. Próximo responsável: ${s.solicitante.nome} (Analista).`
-          : `Rejeitada: projeto mantido em ${s.origem.nome}. ${s.solicitante.nome} (Analista) foi informado.`;
+        return decisao === 'APROVAR'
+          ? `Aprovado: projeto movido para ${s.destino.nome}. Próximo responsável: ${s.solicitante.nome} (Analista).`
+          : `Rejeitado: projeto mantido em ${s.origem.nome}. ${s.solicitante.nome} (Analista) foi informado.`;
       }}
-      rotuloConfirmar={decisao === 'APROVADA' ? 'Confirmar aprovação' : 'Confirmar rejeição'}
-      perigo={decisao === 'REJEITADA'}
+      rotuloConfirmar={decisao === 'APROVAR' ? 'Confirmar aprovação' : 'Confirmar rejeição'}
+      perigo={decisao === 'REJEITAR'}
     >
       {() => (
         <>
@@ -65,13 +72,7 @@ export function DecisaoModal({ solicitacao, decisaoInicial, onFechar, onFeito }:
             {s.evidencias.length > 0 && (
               <div>
                 <p className="eyebrow mb-1">Evidências</p>
-                <ul className="space-y-1">
-                  {s.evidencias.map((e) => (
-                    <li key={e.id} className="text-slate-700">
-                      {e.nomeArquivo} <span className="text-bb-muted">· {formatarTamanho(e.tamanhoBytes)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <ListaEvidencias evidencias={s.evidencias} />
               </div>
             )}
           </div>
@@ -79,8 +80,8 @@ export function DecisaoModal({ solicitacao, decisaoInicial, onFechar, onFeito }:
             valor={decisao}
             onChange={setDecisao}
             opcoes={[
-              { v: 'APROVADA', t: 'Aprovar', d: `Move o projeto para ${s.destino.nome}.` },
-              { v: 'REJEITADA', t: 'Rejeitar', d: `Mantém o projeto em ${s.origem.nome}.`, tom: 'perigo' },
+              { v: 'APROVAR', t: 'Aprovar', d: `Move o projeto para ${s.destino.nome}.` },
+              { v: 'REJEITAR', t: 'Rejeitar', d: `Mantém o projeto em ${s.origem.nome}.`, tom: 'perigo' },
             ]}
           />
           <Campo label="Justificativa da decisão" erro={erro ?? undefined} htmlFor="d-just">

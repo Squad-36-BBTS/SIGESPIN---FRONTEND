@@ -1,24 +1,30 @@
-import { ArrowDown, ArrowRight, ArrowUp, Gavel, Lock, Pencil, Plus, Power, Trash2 } from 'lucide-react';
+import { ArrowRight, Gavel, Lock, Pencil, Plus, Power } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { Campo, Erro, Modal, PageHeader, Selo, SeloDiscussao, Skeleton, Spinner } from '@/components/common/ui';
-import { useAsync } from '@/hooks';
+import { Campo, Erro, Modal, PageHeader, Selo, Skeleton, Spinner } from '@/components/common/ui';
+import { temRota } from '@/fluxos/registro';
+import { useAsync, useAuth } from '@/hooks';
 import { kanbanService, projetoService } from '@/services';
 import { mensagemErro } from '@/services/api';
-import type { EtapaKanban } from '@/types/domain';
-import { CORES_ETAPA } from '@/utils/constants';
+import type { EtapaKanban, TipoTerminal } from '@/types/domain';
+import { CORES_ETAPA, TIPO_TERMINAL_LABEL } from '@/utils/constants';
+import { porPerfil } from '@/utils/permissoes';
 
-// Configuração do Kanban: etapas e transições, com exigência de governança por transição.
-// Quem pode configurar ainda está "a definir" (guia, seção 7): a tela abre em modo consulta e a
-// edição só é liberada como simulação para discussão com o cliente.
+const CODIGO = /^[A-Z][A-Z0-9_]*$/;
+
+// Configuração do quadro (guia, seção 3). O Especialista cria e edita colunas e percursos diretamente,
+// respeitando as restrições de uso e a versão vigente. Os demais perfis consultam; o Analista propõe
+// alterações pela tela de propostas.
 export default function KanbanConfigPage() {
+  const { usuario } = useAuth();
   const config = useAsync(() => kanbanService.configuracao(), []);
-  const projetos = useAsync(() => projetoService.listar(), []);
-  const [simular, setSimular] = useState(false);
-  const [editando, setEditando] = useState<Partial<EtapaKanban> | null>(null);
+  const projetos = useAsync(() => projetoService.listar({ arquivamento: 'TODOS' }), []);
+  const [editando, setEditando] = useState<EtapaKanban | 'nova' | null>(null);
   const [nova, setNova] = useState({ origemId: 0, destinoId: 0, exigeGovernanca: true });
   const [ocupado, setOcupado] = useState(false);
+  const pode = porPerfil('configurarQuadro', usuario).permitido;
 
   const recarregar = () => {
     config.recarregar();
@@ -30,8 +36,11 @@ export default function KanbanConfigPage() {
       await fn();
       if (ok) toast.success(ok);
       recarregar();
+      return true;
     } catch (e) {
       toast.error(mensagemErro(e));
+      recarregar();
+      return false;
     } finally {
       setOcupado(false);
     }
@@ -46,21 +55,28 @@ export default function KanbanConfigPage() {
     <div>
       <PageHeader
         eyebrow="Kanban"
-        titulo="Configurar etapas e transições"
-        descricao="Etapas representam a jornada real. Cada transição indica se exige governança. Etapas em uso não podem ser removidas."
+        titulo="Configuração do quadro"
+        descricao="Colunas representam a jornada; percursos dizem para onde cada coluna pode seguir e se exigem governança."
         acoes={
-          <button className={simular ? 'btn-secondary' : 'btn-primary'} onClick={() => setSimular((v) => !v)}>
-            {simular ? <Lock className="h-4 w-4" /> : <Pencil className="h-4 w-4" />} {simular ? 'Voltar ao modo consulta' : 'Simular edição'}
-          </button>
+          temRota('/app/propostas') && (
+            <Link to="/app/propostas" className="btn-ghost">
+              Propostas de configuração
+            </Link>
+          )
         }
       />
 
-      <div className={`mb-5 flex flex-wrap items-center gap-3 rounded-card border border-dashed px-4 py-3 text-sm ${simular ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-bb-line-2 bg-white text-slate-600'}`}>
-        <SeloDiscussao texto="Permissão a definir" />
-        {simular
-          ? 'Edição liberada apenas como simulação para discussão. Quem poderá configurar o Kanban ainda será decidido com o cliente.'
-          : 'Modo consulta. Quem poderá configurar o Kanban (Analista, Especialista ou ambos) ainda será decidido com o cliente.'}
-      </div>
+      {!pode && (
+        <div className="mb-5 flex flex-wrap items-center gap-2 rounded-card border border-dashed border-bb-line-2 bg-white px-4 py-3 text-sm text-slate-600">
+          <Lock className="h-4 w-4" />
+          Modo consulta. A configuração direta cabe ao Especialista.
+          {usuario?.perfil === 'ANALISTA' && temRota('/app/propostas') && (
+            <Link to="/app/propostas" className="font-bold text-bb-blue hover:underline">
+              Propor uma coluna ou um percurso
+            </Link>
+          )}
+        </div>
+      )}
 
       {config.erro && <Erro texto={config.erro} onTentar={config.recarregar} />}
       {!config.dados ? (
@@ -69,57 +85,45 @@ export default function KanbanConfigPage() {
         <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
           <section className="card p-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold">Etapas (ordem das colunas)</h2>
-              {simular && (
-                <button className="btn-secondary btn-sm" onClick={() => setEditando({ nome: '', descricao: '', cor: CORES_ETAPA[5], terminal: false })}>
-                  <Plus className="h-3.5 w-3.5" /> Nova etapa
+              <h2 className="font-bold">Colunas (ordem do quadro)</h2>
+              {pode && (
+                <button className="btn-secondary btn-sm" onClick={() => setEditando('nova')}>
+                  <Plus className="h-3.5 w-3.5" /> Nova coluna
                 </button>
               )}
             </div>
             <ul className="mt-4 space-y-2">
-              {etapas.map((e, i) => {
+              {etapas.map((e) => {
                 const uso = emUso(e.id);
+                const bloqueio = e.codigo === 'IDEACAO' ? 'Coluna inicial: não pode ser desativada' : uso ? 'Ocupada por projetos: não pode ser desativada' : transicoes.some((t) => t.ativa && (t.origemId === e.id || t.destinoId === e.id)) ? 'Referenciada por percurso ativo' : '';
                 return (
                   <li key={e.id} className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 ${e.ativa ? 'border-bb-line' : 'border-dashed border-bb-line-2 bg-slate-50 opacity-70'}`}>
                     <span className="h-8 w-2 rounded-full" style={{ background: e.cor }} />
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-2 font-bold">
                         {e.nome}
-                        {e.terminal && <Selo classe="border-slate-200 bg-slate-100 text-slate-600">Final</Selo>}
+                        <span className="font-mono text-[11px] font-semibold text-bb-muted">{e.codigo}</span>
+                        {e.tipoTerminal && <Selo classe="border-slate-200 bg-slate-100 text-slate-600">Terminal · {TIPO_TERMINAL_LABEL[e.tipoTerminal]}</Selo>}
                         {!e.ativa && <Selo classe="border-slate-200 bg-white text-slate-500">Inativa</Selo>}
                       </p>
                       <p className="text-xs text-bb-muted">
-                        {e.descricao || 'Sem descrição'} · {uso} projeto{uso !== 1 && 's'}
+                        Ordem {e.ordem} · versão {e.versao} · {uso} projeto{uso !== 1 && 's'}
+                        {e.descricao ? ` · ${e.descricao}` : ''}
                       </p>
                     </div>
-                    {simular && (
+                    {pode && (
                       <div className="flex gap-1">
-                        <button className="btn-ghost h-8 w-8 px-0" aria-label={`Subir ${e.nome}`} disabled={ocupado || i === 0} onClick={() => executar(() => kanbanService.reordenarEtapa(e.id, -1))}>
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
-                        <button className="btn-ghost h-8 w-8 px-0" aria-label={`Descer ${e.nome}`} disabled={ocupado || i === etapas.length - 1} onClick={() => executar(() => kanbanService.reordenarEtapa(e.id, 1))}>
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
                         <button className="btn-ghost h-8 w-8 px-0" aria-label={`Editar ${e.nome}`} onClick={() => setEditando(e)}>
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           className="btn-ghost h-8 w-8 px-0"
-                          aria-label={e.ativa ? `Inativar ${e.nome}` : `Ativar ${e.nome}`}
-                          title={e.ativa && uso ? 'Em uso: não pode ser inativada' : e.ativa ? 'Inativar' : 'Ativar'}
-                          disabled={ocupado || (e.ativa && uso > 0)}
-                          onClick={() => executar(() => kanbanService.alternarEtapa(e.id), e.ativa ? 'Etapa inativada.' : 'Etapa ativada.')}
+                          aria-label={e.ativa ? `Desativar ${e.nome}` : `Ativar ${e.nome}`}
+                          title={e.ativa ? bloqueio || 'Desativar' : 'Ativar'}
+                          disabled={ocupado || (e.ativa && !!bloqueio)}
+                          onClick={() => executar(() => kanbanService.editarEtapa(e.id, { nome: e.nome, ordem: e.ordem, ativa: !e.ativa, versao: e.versao }), e.ativa ? 'Coluna desativada.' : 'Coluna ativada.')}
                         >
                           <Power className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="btn-ghost h-8 w-8 px-0 hover:text-rose-600"
-                          aria-label={`Remover ${e.nome}`}
-                          title={uso ? 'Em uso: não pode ser removida' : 'Remover'}
-                          disabled={ocupado || uso > 0}
-                          onClick={() => executar(() => kanbanService.excluirEtapa(e.id), 'Etapa removida.')}
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     )}
@@ -130,34 +134,35 @@ export default function KanbanConfigPage() {
           </section>
 
           <section className="card p-5">
-            <h2 className="font-bold">Transições permitidas</h2>
-            <p className="text-xs text-bb-muted">Com governança, o Analista cria uma solicitação e um Especialista decide. Sem governança, o Analista movimenta com justificativa.</p>
+            <h2 className="font-bold">Percursos</h2>
+            <p className="text-xs text-bb-muted">Governado: o Analista abre um pedido de avanço e o Especialista decide (ou move diretamente). Livre: Analista e Especialista movem com justificativa.</p>
             <ul className="mt-4 space-y-2">
               {transicoes.map((t) => (
                 <li key={t.id} className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 text-sm ${t.ativa ? 'border-bb-line' : 'border-dashed border-bb-line-2 bg-slate-50 opacity-70'}`}>
                   <span className="flex flex-1 items-center gap-1.5 font-semibold">
                     {nome(t.origemId)} <ArrowRight className="h-3.5 w-3.5 text-bb-muted" /> {nome(t.destinoId)}
+                    <span className="text-[11px] font-normal text-bb-muted">v{t.versao}</span>
                   </span>
                   <label className={`flex items-center gap-1.5 text-xs font-semibold ${t.exigeGovernanca ? 'text-amber-700' : 'text-emerald-700'}`}>
                     <input
                       type="checkbox"
                       className="h-4 w-4 accent-amber-600"
                       checked={t.exigeGovernanca}
-                      disabled={!simular || ocupado}
-                      onChange={(e) => executar(() => kanbanService.atualizarTransicao(t.id, { exigeGovernanca: e.target.checked }))}
+                      disabled={!pode || ocupado}
+                      onChange={(e) => executar(() => kanbanService.editarTransicao(t.id, { exigeGovernanca: e.target.checked, ativa: t.ativa, versao: t.versao }), 'Percurso atualizado.')}
                     />
-                    <Gavel className="h-3.5 w-3.5" /> Exige governança
+                    <Gavel className="h-3.5 w-3.5" /> {t.exigeGovernanca ? 'Governado' : 'Livre'}
                   </label>
-                  {simular && (
-                    <button className="btn-ghost btn-sm" disabled={ocupado} onClick={() => executar(() => kanbanService.atualizarTransicao(t.id, { ativa: !t.ativa }))}>
-                      {t.ativa ? 'Inativar' : 'Ativar'}
+                  {pode && (
+                    <button className="btn-ghost btn-sm" disabled={ocupado} onClick={() => executar(() => kanbanService.editarTransicao(t.id, { exigeGovernanca: t.exigeGovernanca, ativa: !t.ativa, versao: t.versao }), t.ativa ? 'Percurso desativado.' : 'Percurso reativado.')}>
+                      {t.ativa ? 'Desativar' : 'Reativar'}
                     </button>
                   )}
-                  {!t.ativa && <Selo classe="border-slate-200 bg-white text-slate-500">Inativa</Selo>}
+                  {!t.ativa && <Selo classe="border-slate-200 bg-white text-slate-500">Inativo</Selo>}
                 </li>
               ))}
             </ul>
-            {simular && (
+            {pode && (
               <div className="mt-5 grid gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto]">
                 <select className="input" value={nova.origemId} onChange={(e) => setNova({ ...nova, origemId: Number(e.target.value) })} aria-label="Origem">
                   <option value={0}>De…</option>
@@ -178,13 +183,15 @@ export default function KanbanConfigPage() {
                 <button
                   className="btn-primary"
                   disabled={ocupado || !nova.origemId || !nova.destinoId}
-                  onClick={() => executar(() => kanbanService.salvarTransicao(nova), 'Transição adicionada.').then(() => setNova({ origemId: 0, destinoId: 0, exigeGovernanca: true }))}
+                  onClick={async () => {
+                    if (await executar(() => kanbanService.criarTransicao(nova), 'Percurso criado.')) setNova({ origemId: 0, destinoId: 0, exigeGovernanca: true });
+                  }}
                 >
-                  <Plus className="h-4 w-4" /> Adicionar
+                  <Plus className="h-4 w-4" /> Criar
                 </button>
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 sm:col-span-3">
                   <input type="checkbox" className="h-4 w-4 accent-amber-600" checked={nova.exigeGovernanca} onChange={(e) => setNova({ ...nova, exigeGovernanca: e.target.checked })} />
-                  A nova transição exige governança
+                  O novo percurso é governado
                 </label>
               </div>
             )}
@@ -192,28 +199,40 @@ export default function KanbanConfigPage() {
         </div>
       )}
 
-      <EtapaModal etapa={editando} onFechar={() => setEditando(null)} onSalvo={recarregar} />
+      <ColunaModal etapa={editando} etapas={etapas} onFechar={() => setEditando(null)} onSalvo={recarregar} />
     </div>
   );
 }
 
-function EtapaModal({ etapa, onFechar, onSalvo }: { etapa: Partial<EtapaKanban> | null; onFechar: () => void; onSalvo: () => void }) {
-  const [form, setForm] = useState({ nome: '', descricao: '', cor: CORES_ETAPA[0], terminal: false });
+// Criar: código, nome, ordem e tipo terminal. Editar: nome, ordem e ativa (código e tipo terminal ficam fixos).
+function ColunaModal({ etapa, etapas, onFechar, onSalvo }: { etapa: EtapaKanban | 'nova' | null; etapas: EtapaKanban[]; onFechar: () => void; onSalvo: () => void }) {
+  const [form, setForm] = useState({ codigo: '', nome: '', ordem: 0, terminal: '' as TipoTerminal | '', descricao: '', cor: CORES_ETAPA[5] });
+  const [erros, setErros] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
-  const [ultima, setUltima] = useState<Partial<EtapaKanban> | null>(null);
+  const [ultima, setUltima] = useState<EtapaKanban | 'nova' | null>(null);
 
   if (etapa !== ultima) {
     setUltima(etapa);
-    if (etapa) setForm({ nome: etapa.nome ?? '', descricao: etapa.descricao ?? '', cor: etapa.cor ?? CORES_ETAPA[0], terminal: !!etapa.terminal });
+    setErros({});
+    if (etapa === 'nova') setForm({ codigo: '', nome: '', ordem: Math.max(0, ...etapas.map((e) => e.ordem)) + 10, terminal: '', descricao: '', cor: CORES_ETAPA[5] });
+    else if (etapa) setForm({ codigo: etapa.codigo, nome: etapa.nome, ordem: etapa.ordem, terminal: etapa.tipoTerminal ?? '', descricao: etapa.descricao, cor: etapa.cor });
   }
   if (!etapa) return null;
+  const criando = etapa === 'nova';
 
-  const salvar = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const salvar = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const e: Record<string, string> = {};
+    if (criando && (!CODIGO.test(form.codigo) || form.codigo.length > 255)) e.codigo = 'Comece com letra maiúscula e use só letras maiúsculas, dígitos ou sublinhado.';
+    if (!form.nome.trim() || form.nome.trim().length > 255) e.nome = 'Informe o nome (até 255 caracteres).';
+    if (!Number.isInteger(form.ordem) || form.ordem < 0) e.ordem = 'Use um inteiro maior ou igual a zero.';
+    setErros(e);
+    if (Object.keys(e).length) return;
     setEnviando(true);
     try {
-      await kanbanService.salvarEtapa({ ...form, id: etapa.id });
-      toast.success(etapa.id ? 'Etapa atualizada.' : 'Etapa criada no fim do Kanban.');
+      if (criando) await kanbanService.criarEtapa({ codigo: form.codigo, nome: form.nome, ordem: form.ordem, terminal: form.terminal || null, descricao: form.descricao, cor: form.cor });
+      else await kanbanService.editarEtapa(etapa.id, { nome: form.nome, ordem: form.ordem, ativa: etapa.ativa, versao: etapa.versao, descricao: form.descricao, cor: form.cor });
+      toast.success(criando ? 'Coluna criada.' : 'Coluna atualizada.');
       onSalvo();
       onFechar();
     } catch (er) {
@@ -227,24 +246,39 @@ function EtapaModal({ etapa, onFechar, onSalvo }: { etapa: Partial<EtapaKanban> 
     <Modal
       aberto
       onFechar={onFechar}
-      titulo={etapa.id ? 'Editar etapa' : 'Nova etapa'}
+      titulo={criando ? 'Nova coluna' : `Editar coluna · versão ${etapa.versao}`}
       rodape={
         <>
           <button className="btn-ghost" onClick={onFechar} disabled={enviando}>
             Cancelar
           </button>
-          <button type="submit" form="form-etapa" className="btn-primary" disabled={enviando}>
+          <button type="submit" form="form-coluna" className="btn-primary" disabled={enviando}>
             {enviando && <Spinner />} Salvar
           </button>
         </>
       }
     >
-      <form id="form-etapa" onSubmit={salvar} className="space-y-4">
-        <Campo label="Nome" htmlFor="et-nome">
-          <input id="et-nome" className="input" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-        </Campo>
-        <Campo label="Descrição" htmlFor="et-desc">
-          <input id="et-desc" className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+      <form id="form-coluna" onSubmit={salvar} className="space-y-4" noValidate>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Campo label="Código" erro={erros.codigo} dica={criando ? 'Único. Não muda depois de criado.' : 'Fixo depois da criação.'} htmlFor="col-cod">
+            <input id="col-cod" className="input font-mono uppercase" value={form.codigo} disabled={!criando} onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase().replace(/\s/g, '_') })} />
+          </Campo>
+          <Campo label="Nome" erro={erros.nome} htmlFor="col-nome">
+            <input id="col-nome" className="input" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+          </Campo>
+          <Campo label="Ordem" erro={erros.ordem} dica="Inteiro maior ou igual a zero; define a posição da coluna." htmlFor="col-ordem">
+            <input id="col-ordem" type="number" min={0} step={1} className="input" value={form.ordem} onChange={(e) => setForm({ ...form, ordem: Number(e.target.value) })} />
+          </Campo>
+          <Campo label="Tipo terminal" dica={criando ? 'Colunas terminais não admitem saída.' : 'Fixo depois da criação.'} htmlFor="col-term">
+            <select id="col-term" className="input" value={form.terminal} disabled={!criando} onChange={(e) => setForm({ ...form, terminal: e.target.value as TipoTerminal | '' })}>
+              <option value="">Não é terminal</option>
+              <option value="CONCLUSAO">{TIPO_TERMINAL_LABEL.CONCLUSAO}</option>
+              <option value="DESCONTINUACAO">{TIPO_TERMINAL_LABEL.DESCONTINUACAO}</option>
+            </select>
+          </Campo>
+        </div>
+        <Campo label="Descrição (opcional)" htmlFor="col-desc">
+          <input id="col-desc" className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
         </Campo>
         <fieldset>
           <legend className="label">Cor</legend>
@@ -262,10 +296,6 @@ function EtapaModal({ etapa, onFechar, onSalvo }: { etapa: Partial<EtapaKanban> 
             ))}
           </div>
         </fieldset>
-        <label className="flex items-center gap-2 text-sm font-semibold">
-          <input type="checkbox" className="h-4 w-4 accent-bb-blue" checked={form.terminal} onChange={(e) => setForm({ ...form, terminal: e.target.checked })} />
-          Etapa final (sem transições de saída, como Concluído e Descontinuado)
-        </label>
       </form>
     </Modal>
   );
