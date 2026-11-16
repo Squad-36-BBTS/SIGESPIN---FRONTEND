@@ -1,84 +1,51 @@
-# SIGES-PIN
+# SIGES-PIN — Front-end
 
-**Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS**
+Front-end do Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS.
+React 18 + Vite + TypeScript + Tailwind CSS 3.4.
 
-> Versão: 1.0 (Camada de Domínio – Entidades, Enums, Repositórios e Migration)
-> Autor: equipe SIGES‑PIN – Back‑end
+## Como rodar
 
-## 📖 Visão Geral
-
-O SIGES‑PIN gerencia o ciclo completo de projetos de inovação, desde a captura de demandas (Intake com IA) até a governança, auditoria e entrega de evidências.  Ele está alinhado ao normativo **PRO663‑009** da BBTS e segue a arquitetura **Spring Boot 3.x**, **Java 21**, **PostgreSQL** e **Flyway** para migrações.
-
-## ✨ Principais Funcionalidades
-
-- **Intake Inteligente** – Integração com Google Gemini (gemini‑1.5‑flash) para sugestão de arena, hipótese, TRL inicial e scores de radar.
-- **Funil de Inovação** – Controle estrito de estágios (`IDEACAO → POC → MVP → CONCLUIDO / DESCONTINUADO`).
-- **Governança** – Deliberações do Comitê (`APROVADO`, `PIVOTADO`, `REPROVADO`).
-- **Auditoria** – Log de todas as mudanças de **status** e **TRL** (`HistoricoTransicoes`).
-- **Evidências** – Upload de arquivos para **AWS S3** com referência armazenada no banco.
-- **Segurança** – JWT (jjwt) + Spring Security, perfis de acesso (`DEMANDANTE`, `ANALISTA`, `COMITE`, `EXECUTIVO`).
-- **Métricas** – Dashboard com contagens e médias via consultas SQL.
-
-## 🏛️ Arquitetura
-
-- **Camada de Domínio** – Entidades JPA, Enums, Repositórios e migração Flyway (documentada em `DOCUMENTACAO_FASE1_DOMINIO.md`).
-- **Camada de Serviço** – (a ser implementada) regras de negócio, validações e integração com a IA.
-- **Camada de API** – (a ser implementada) controladores REST seguindo o contrato descrito no *Master Spec*.
-- **Persistência** – PostgreSQL 16+ hospedado no Supabase, versionado com Flyway.
-- **CI/CD** – Recomenda‑se GitHub Actions para build/teste e deployment.
-
-## 🛠️ Pré‑requisitos
-
-| Ferramenta | Versão mínima |
-|------------|---------------|
-| **Java**   | 21 (ou JBR 25) |
-| **Maven**  | 3.9.x (wrapper incluído) |
-| **PostgreSQL** | 16 |
-| **Git**    | qualquer versão recente |
-
-> **Importante:** O projeto usa o *Maven Wrapper* (`./mvnw`), portanto não é necessário ter o Maven instalado localmente.
-
-## 🚀 Como Executar
-
-1. **Clonar o repositório**
-   ```bash
-   git clone <REPO_URL>
-   cd sigespin
-   ```
-
-2. **Configurar o Banco**
-   - Crie um banco PostgreSQL chamado `sigespin`.
-   - Defina as credenciais no `src/main/resources/application.properties` (ou, preferencialmente, use variáveis de ambiente `DB_USERNAME`, `DB_PASSWORD`).
-   - O Flyway criará as tabelas na primeira inicialização.
-
-3. **Compilar e Executar**
-   ```bash
-   # Usa o wrapper incluído
-   ./mvnw clean install      # compila e executa os testes
-   ./mvnw spring-boot:run    # inicia a aplicação
-   ```
-   A aplicação ficará disponível em `http://localhost:8080/api`.
-
-4. **Verificar as Migrations**
-   O Flyway registra as migrations na tabela `flyway_schema_history`.  Caso precise resetar o banco (ambiente local), basta dropar o schema e reiniciar a aplicação.
-
-## 🧪 Testes
-
-Os testes unitários e de integração estão localizados em `src/test/java`.  Para executá‑los:
 ```bash
-./mvnw test
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # checagem de tipos + build de produção
 ```
 
-## 📚 Documentação Técnica
+Por padrão o app roda em **modo demonstração** (`VITE_USE_MOCK=true` no `.env`), com um banco em memória que
+aplica as regras da revisão 3 (docs/RELATORIO_MUDANCAS.md). Na tela de login há atalhos para os três perfis
+(senha dos usuários de teste em `src/services/mock/seed.ts`). Em "Meu perfil" é possível restaurar os dados.
 
-- **Master Spec (Back‑end)** – [`SIGES-PIN_ Master Spec Back-end.md`](./SIGES-PIN_%20Master%20Spec%20Back-end.md)
-- **Documentação da Camada de Domínio** – [`DOCUMENTACAO_FASE1_DOMINIO.md`](./DOCUMENTACAO_FASE1_DOMINIO.md)
+Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`.
 
-## 🤝 Contribuição
+## Visão geral
 
-1. Fork o repositório.
-2. Crie uma branch para sua feature (`git checkout -b feature/minha-feature`).
-3. Commit suas mudanças (`git commit -m "feat: descrição"`).
-4. Abra um Pull Request.
+O [todo.md](todo.md) explica o site inteiro: fluxos, telas, regras, cores, design e organização do código.
 
-> **Boa prática:** mantenha os comentários de commit claros e siga o padrão Conventional Commits.
+## Fluxos
+
+O código está dividido em uma **base comum** e **quatro zips de fluxo**, um por perfil do login simulado.
+Cada fluxo fica em `src/fluxos/<pasta>/`. A base encontra os fluxos sozinha; sem um deles, o app continua rodando sem aquelas telas.
+
+| Zip | Pastas | Telas e ações |
+|---|---|---|
+| Base comum (em todos) | `src/pages`, `src/components`, `src/services`… | Minha fila, Portfólio e Detalhe do projeto (com dono: zips 3 e 4), menu, dados simulados |
+| 1 · Demandante + acesso | `acesso/`, `demandante/` | Landing, login, cadastro (pedido de acesso), nova demanda, validação de entregas |
+| 2 · Analista | `analista/` | Qualificação, consulta a Especialista, avaliação TRL, movimentação, entregas |
+| 3 · Especialista · Segurança da informação | `governanca/` + Portfólio e Minha fila | Decisão de governança, configurar Kanban, meu perfil, portfólio, minha fila |
+| 4 · Especialista · Dados e IA | `parecer/`, `visao-geral/` + Detalhe do projeto | Parecer técnico, dashboard, ações de mobilização, detalhe do projeto |
+
+## Estrutura
+
+```
+src/
+├── fluxos/          # tipos.ts e registro.ts (contrato) + uma pasta por fluxo
+├── components/      # common (ui), layout (menu lateral direito), fila, projeto (formulário com revisão), radar, trl
+├── contexts/        # AuthContext (sessão e perfil)
+├── hooks/           # useAuth, useAsync, useDebounce, useReveal
+├── pages/           # base: app/ (Minha fila, Portfólio, Detalhe) e public/ (entrada simplificada, 404)
+├── services/        # api.ts (axios), index.ts (serviços), mock/ (banco em memória)
+├── types/           # entidades e DTOs do domínio
+└── utils/           # rótulos, TRL, formatadores e permissoes.ts (matriz de ações)
+```
+
+Documentação: [docs/RELATORIO_MUDANCAS.md](docs/RELATORIO_MUDANCAS.md) (revisão 3, vigente) e [docs/PROPOSTA_FRONTEND.md](docs/PROPOSTA_FRONTEND.md) (proposta inicial).
