@@ -1,7 +1,7 @@
-import { CalendarDays, Megaphone, Plus } from 'lucide-react';
+import { CalendarDays, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { BotaoAcao, Erro, PageHeader, Selo, Skeleton, Vazio } from '@/components/common/ui';
+import { Erro, PageHeader, Selo, Skeleton, Vazio } from '@/components/common/ui';
 import { temRota } from '@/fluxos/registro';
 import { useAsync, useAuth } from '@/hooks';
 import { campanhaService } from '@/services';
@@ -10,7 +10,7 @@ import { formatarData } from '@/utils/formatters';
 import { porPerfil } from '@/utils/permissoes';
 
 // Ações de mobilização (campanhas, desafios, hackathons, residências): origem das demandas induzidas.
-// O cadastro dessas ações não está definido no guia; aparece desabilitado e marcado para discussão.
+// O cadastro dessas ações não faz parte da matriz de permissões da Fase 3; a tela é só de consulta.
 export default function CampanhasPage() {
   const { usuario } = useAuth();
   const { dados, erro, recarregar } = useAsync(() => campanhaService.listar(), []);
@@ -21,8 +21,7 @@ export default function CampanhasPage() {
       <PageHeader
         eyebrow="Entrada induzida"
         titulo="Ações de mobilização"
-        descricao="Campanhas, desafios, hackathons e residências vigentes. Ao registrar uma demanda induzida, ela é associada a uma destas ações."
-        acoes={usuario && <BotaoAcao permissao={porPerfil('criarMobilizacao', usuario)} onClick={() => undefined} icon={<Plus className="h-4 w-4" />}>Nova ação</BotaoAcao>}
+        descricao="Campanhas, desafios, hackathons e residências. Ao registrar uma demanda induzida, ela é associada a uma destas ações."
       />
       {erro && <Erro texto={erro} onTentar={recarregar} />}
       {!dados ? (

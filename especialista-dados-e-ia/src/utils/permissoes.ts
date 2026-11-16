@@ -1,7 +1,7 @@
-// Matriz de ações do guia de fluxo (seção 6), em um único lugar.
+// Matriz de permissões do guia da Fase 3 (seção 2), em um único lugar.
 // Cada ação devolve se está disponível e, quando não estiver, o MOTIVO, para a interface
-// explicar em vez de mostrar um botão sem contexto. "A definir" = ainda não validado com o cliente.
-import type { PerfilUsuario, Projeto, Usuario } from '@/types/domain';
+// explicar em vez de mostrar um botão sem contexto. O mock confere as mesmas condições ao executar.
+import type { PerfilUsuario, Projeto, SolicitacaoTransicao, TransicaoKanban, Usuario } from '@/types/domain';
 
 export type AcaoId =
   | 'registrarDemanda'
@@ -9,71 +9,122 @@ export type AcaoId =
   | 'consultarEspecialista'
   | 'emitirParecer'
   | 'avaliarTrl'
-  | 'moverSemGovernanca'
-  | 'solicitarTransicao'
-  | 'decidirTransicao'
+  | 'moverDireto'
+  | 'solicitarAvanco'
+  | 'decidirAvanco'
+  | 'cancelarAvanco'
+  | 'configurarQuadro'
+  | 'proporConfiguracao'
+  | 'decidirProposta'
+  | 'cancelarProposta'
   | 'submeterEntrega'
   | 'validarEntrega'
-  | 'configurarKanban'
-  | 'criarMobilizacao'
+  | 'registrarCorrecao'
+  | 'recomendarDemanda'
+  | 'responderRecomendacao'
+  | 'gerirProjeto'
   | 'comentar';
 
 export interface Permissao {
   permitido: boolean;
-  aDefinir: boolean;
   motivo?: string;
 }
 
-type Valor = 'SIM' | 'NAO' | 'A_DEFINIR';
-
-// Linhas = ações; colunas = perfis (guia, seção 6)
-const MATRIZ: Record<AcaoId, Record<PerfilUsuario, Valor>> = {
-  registrarDemanda: { DEMANDANTE: 'SIM', ANALISTA: 'A_DEFINIR', ESPECIALISTA: 'A_DEFINIR' },
-  qualificar: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'NAO' },
-  consultarEspecialista: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'NAO' },
-  emitirParecer: { DEMANDANTE: 'NAO', ANALISTA: 'NAO', ESPECIALISTA: 'SIM' },
-  avaliarTrl: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'A_DEFINIR' },
-  moverSemGovernanca: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'A_DEFINIR' },
-  solicitarTransicao: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'NAO' },
-  decidirTransicao: { DEMANDANTE: 'NAO', ANALISTA: 'NAO', ESPECIALISTA: 'SIM' },
-  submeterEntrega: { DEMANDANTE: 'NAO', ANALISTA: 'SIM', ESPECIALISTA: 'A_DEFINIR' },
-  validarEntrega: { DEMANDANTE: 'SIM', ANALISTA: 'NAO', ESPECIALISTA: 'NAO' },
-  configurarKanban: { DEMANDANTE: 'A_DEFINIR', ANALISTA: 'A_DEFINIR', ESPECIALISTA: 'A_DEFINIR' },
-  criarMobilizacao: { DEMANDANTE: 'A_DEFINIR', ANALISTA: 'A_DEFINIR', ESPECIALISTA: 'A_DEFINIR' },
-  comentar: { DEMANDANTE: 'SIM', ANALISTA: 'SIM', ESPECIALISTA: 'SIM' },
+// Linhas = ações; colunas = perfis. null = não pode; texto = pode, com a condição do perfil
+const MATRIZ: Record<AcaoId, Record<PerfilUsuario, string | null>> = {
+  registrarDemanda: { DEMANDANTE: 'Sim', ANALISTA: null, ESPECIALISTA: null },
+  qualificar: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: null },
+  consultarEspecialista: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: null },
+  emitirParecer: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  avaliarTrl: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
+  moverDireto: { DEMANDANTE: null, ANALISTA: 'Percurso livre', ESPECIALISTA: 'Percurso livre ou governado' },
+  solicitarAvanco: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: null },
+  decidirAvanco: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  cancelarAvanco: { DEMANDANTE: null, ANALISTA: 'Pedido próprio', ESPECIALISTA: 'Sim' },
+  configurarQuadro: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  proporConfiguracao: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: null },
+  decidirProposta: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  cancelarProposta: { DEMANDANTE: null, ANALISTA: 'Pedido próprio', ESPECIALISTA: 'Sim' },
+  submeterEntrega: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
+  validarEntrega: { DEMANDANTE: 'Responsável pelo projeto', ANALISTA: null, ESPECIALISTA: null },
+  registrarCorrecao: { DEMANDANTE: 'Responsável pelo projeto', ANALISTA: null, ESPECIALISTA: null },
+  recomendarDemanda: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
+  responderRecomendacao: { DEMANDANTE: 'Somente destinatário', ANALISTA: null, ESPECIALISTA: null },
+  gerirProjeto: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  comentar: { DEMANDANTE: 'Responsável pelo projeto', ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
 };
 
 export const ACAO_LABEL: Record<AcaoId, string> = {
-  registrarDemanda: 'Registrar demanda',
+  registrarDemanda: 'Cadastrar demanda',
   qualificar: 'Qualificar demanda',
   consultarEspecialista: 'Consultar Especialista',
-  emitirParecer: 'Emitir parecer técnico',
-  avaliarTrl: 'Registrar avaliação de TRL',
-  moverSemGovernanca: 'Movimentar transição sem governança',
-  solicitarTransicao: 'Solicitar transição com governança',
-  decidirTransicao: 'Decidir transição que exige governança',
-  submeterEntrega: 'Submeter entrega/MVP',
-  validarEntrega: 'Validar entrega/MVP',
-  configurarKanban: 'Configurar etapas e transições',
-  criarMobilizacao: 'Cadastrar ação de mobilização',
+  emitirParecer: 'Emitir parecer',
+  avaliarTrl: 'Registrar TRL',
+  moverDireto: 'Mover diretamente',
+  solicitarAvanco: 'Solicitar avanço governado',
+  decidirAvanco: 'Decidir avanço',
+  cancelarAvanco: 'Cancelar avanço',
+  configurarQuadro: 'Configurar quadro diretamente',
+  proporConfiguracao: 'Propor coluna ou percurso',
+  decidirProposta: 'Decidir proposta de configuração',
+  cancelarProposta: 'Cancelar proposta de configuração',
+  submeterEntrega: 'Submeter entrega',
+  validarEntrega: 'Validar entrega',
+  registrarCorrecao: 'Registrar correção',
+  recomendarDemanda: 'Recomendar demanda',
+  responderRecomendacao: 'Converter ou recusar recomendação',
+  gerirProjeto: 'Editar, arquivar e reativar projeto',
   comentar: 'Participar da conversa do projeto',
 };
 
+// Coluna "Condição adicional" do guia
+export const ACAO_CONDICAO: Record<AcaoId, string> = {
+  registrarDemanda: 'Projeto começa em Ideação',
+  qualificar: 'Projeto ativo',
+  consultarEspecialista: 'Projeto ativo e Especialista ativo como destinatário',
+  emitirParecer: 'Se vinculado à consulta, exige o destinatário correto',
+  avaliarTrl: 'Evidências do projeto',
+  moverDireto: 'Percurso válido e projeto sem solicitação pendente',
+  solicitarAvanco: 'Percurso governado; um pedido pendente por projeto',
+  decidirAvanco: 'Pedido pendente',
+  cancelarAvanco: 'Pedido pendente',
+  configurarQuadro: 'Restrições de uso e versão',
+  proporConfiguracao: 'Proposta válida e justificativa',
+  decidirProposta: 'Pedido pendente',
+  cancelarProposta: 'Pedido pendente',
+  submeterEntrega: 'Projeto ativo',
+  validarEntrega: 'Projeto ativo',
+  registrarCorrecao: 'Projeto ativo',
+  recomendarDemanda: 'Destinatário ativo com perfil Demandante',
+  responderRecomendacao: 'Recomendação pendente',
+  gerirProjeto: 'Versão vigente e justificativa',
+  comentar: 'Projeto ativo',
+};
+
+// Ordem da tabela de permissões (Meu perfil)
 export const ACOES_MATRIZ: AcaoId[] = [
   'registrarDemanda',
   'qualificar',
   'consultarEspecialista',
   'emitirParecer',
   'avaliarTrl',
-  'moverSemGovernanca',
-  'solicitarTransicao',
-  'decidirTransicao',
+  'moverDireto',
+  'solicitarAvanco',
+  'decidirAvanco',
+  'cancelarAvanco',
+  'configurarQuadro',
+  'proporConfiguracao',
+  'decidirProposta',
+  'cancelarProposta',
   'submeterEntrega',
   'validarEntrega',
-  'configurarKanban',
+  'registrarCorrecao',
+  'recomendarDemanda',
+  'responderRecomendacao',
+  'gerirProjeto',
 ];
 
-export function valorMatriz(acao: AcaoId, perfil: PerfilUsuario): Valor {
+export function valorMatriz(acao: AcaoId, perfil: PerfilUsuario): string | null {
   return MATRIZ[acao][perfil];
 }
 
@@ -82,49 +133,78 @@ const QUEM: Record<AcaoId, string> = {
   qualificar: 'ao Analista',
   consultarEspecialista: 'ao Analista',
   emitirParecer: 'ao Especialista',
-  avaliarTrl: 'ao Analista',
-  moverSemGovernanca: 'ao Analista',
-  solicitarTransicao: 'ao Analista',
-  decidirTransicao: 'ao Especialista',
-  submeterEntrega: 'ao Analista',
-  validarEntrega: 'ao Demandante dono do problema',
-  configurarKanban: 'a um perfil ainda não definido',
-  criarMobilizacao: 'a um perfil ainda não definido',
-  comentar: 'à equipe e ao demandante',
+  avaliarTrl: 'ao Analista e ao Especialista',
+  moverDireto: 'ao Analista (percurso livre) e ao Especialista',
+  solicitarAvanco: 'ao Analista',
+  decidirAvanco: 'ao Especialista',
+  cancelarAvanco: 'ao Analista que abriu o pedido e ao Especialista',
+  configurarQuadro: 'ao Especialista',
+  proporConfiguracao: 'ao Analista',
+  decidirProposta: 'ao Especialista',
+  cancelarProposta: 'ao Analista que abriu a proposta e ao Especialista',
+  submeterEntrega: 'ao Analista e ao Especialista',
+  validarEntrega: 'ao Demandante responsável pelo projeto',
+  registrarCorrecao: 'ao Demandante responsável pelo projeto',
+  recomendarDemanda: 'ao Analista e ao Especialista',
+  responderRecomendacao: 'ao Demandante destinatário',
+  gerirProjeto: 'ao Especialista',
+  comentar: 'à equipe e ao Demandante responsável',
 };
+
+export const negado = (motivo: string): Permissao => ({ permitido: false, motivo });
+const PERMITIDO: Permissao = { permitido: true };
 
 // Permissão pelo perfil (sem contexto do projeto)
 export function porPerfil(acao: AcaoId, u: Usuario | null): Permissao {
-  if (!u) return { permitido: false, aDefinir: false, motivo: 'Entre no sistema.' };
-  const v = MATRIZ[acao][u.perfil];
-  if (v === 'SIM') return { permitido: true, aDefinir: false };
-  if (v === 'A_DEFINIR')
-    return { permitido: false, aDefinir: true, motivo: 'Permissão em discussão com o cliente; ainda não é uma regra do sistema.' };
-  return { permitido: false, aDefinir: false, motivo: `Esta ação cabe ${QUEM[acao]}.` };
+  if (!u) return negado('Entre no sistema.');
+  return MATRIZ[acao][u.perfil] ? PERMITIDO : negado(`Esta ação cabe ${QUEM[acao]}.`);
 }
 
-// Permissão no contexto de um projeto (etapa, responsável, dono etc.)
+// Ações que exigem projeto ativo (não arquivado). Gerir o projeto inclui a reativação.
+const EXIGEM_ATIVO: AcaoId[] = [
+  'qualificar',
+  'consultarEspecialista',
+  'emitirParecer',
+  'avaliarTrl',
+  'moverDireto',
+  'solicitarAvanco',
+  'submeterEntrega',
+  'validarEntrega',
+  'registrarCorrecao',
+  'comentar',
+];
+
+// Permissão no contexto de um projeto (estado, responsável, pedidos pendentes)
 export function noProjeto(acao: AcaoId, u: Usuario | null, p: Projeto, extra: { solicitacaoPendente?: boolean } = {}): Permissao {
   const base = porPerfil(acao, u);
   if (!base.permitido || !u) return base;
-  const negar = (motivo: string): Permissao => ({ permitido: false, aDefinir: false, motivo });
-
-  const acoesDoAnalista: AcaoId[] = ['qualificar', 'consultarEspecialista', 'avaliarTrl', 'moverSemGovernanca', 'solicitarTransicao', 'submeterEntrega'];
-  if (acoesDoAnalista.includes(acao)) {
-    if (p.etapa.terminal) return negar(`O projeto está em ${p.etapa.nome}, uma etapa final.`);
-    if (p.analistaResponsavel && p.analistaResponsavel.id !== u.id)
-      return negar(`A iniciativa é conduzida por ${p.analistaResponsavel.nome}.`);
-  }
-  if ((acao === 'moverSemGovernanca' || acao === 'solicitarTransicao') && extra.solicitacaoPendente)
-    return negar('Já existe uma solicitação de transição aguardando governança.');
-  if (acao === 'validarEntrega' && p.demandante?.id !== u.id) return negar('Somente o demandante dono do problema valida as entregas.');
-  if (acao === 'comentar' && u.perfil === 'DEMANDANTE' && p.demandante?.id !== u.id)
-    return negar('Somente o demandante desta demanda participa da conversa.');
-  return base;
+  if (p.arquivado && EXIGEM_ATIVO.includes(acao)) return negado('O projeto está arquivado. As ações voltam após a reativação pelo Especialista.');
+  if ((acao === 'moverDireto' || acao === 'solicitarAvanco') && p.etapa.terminal) return negado(`${p.etapa.nome} é uma etapa terminal e não admite saída.`);
+  if ((acao === 'moverDireto' || acao === 'solicitarAvanco') && extra.solicitacaoPendente) return negado('Já existe um pedido de avanço pendente para este projeto.');
+  if ((acao === 'validarEntrega' || acao === 'registrarCorrecao') && p.demandante?.id !== u.id)
+    return negado(p.demandante ? `Somente ${p.demandante.nome}, Demandante responsável pelo projeto, pode fazer isso.` : 'O projeto ainda não tem Demandante responsável.');
+  if (acao === 'comentar' && u.perfil === 'DEMANDANTE' && p.demandante?.id !== u.id) return negado('Somente o Demandante responsável participa da conversa.');
+  return PERMITIDO;
 }
 
-// Ação indisponível por um motivo de contexto (sem consulta à matriz)
-export const negado = (motivo: string): Permissao => ({ permitido: false, aDefinir: false, motivo });
+// Percurso livre: Analista e Especialista movem direto. Percurso governado: Especialista move direto;
+// o Analista abre um pedido de avanço.
+export function modoMovimentacao(u: Usuario, t: Pick<TransicaoKanban, 'exigeGovernanca'>): 'DIRETO' | 'SOLICITACAO' | null {
+  if (u.perfil === 'ESPECIALISTA') return 'DIRETO';
+  if (u.perfil === 'ANALISTA') return t.exigeGovernanca ? 'SOLICITACAO' : 'DIRETO';
+  return null;
+}
 
-// A ação aparece para o perfil quando é "Sim" ou "A definir"; "Não" fica fora da barra de ações
-export const visivelPara = (acao: AcaoId, perfil: PerfilUsuario) => valorMatriz(acao, perfil) !== 'NAO';
+// Cancelar pedido de avanço ou proposta: o Analista só cancela o próprio; o Especialista cancela qualquer um
+export function podeCancelar(acao: 'cancelarAvanco' | 'cancelarProposta', u: Usuario | null, pedido: { status: string; solicitanteId: number }): Permissao {
+  const base = porPerfil(acao, u);
+  if (!base.permitido || !u) return base;
+  if (pedido.status !== 'PENDENTE') return negado('Somente pedidos pendentes podem ser cancelados.');
+  if (u.perfil === 'ANALISTA' && pedido.solicitanteId !== u.id) return negado('O Analista só cancela os pedidos que ele mesmo abriu.');
+  return PERMITIDO;
+}
+
+export const solicitanteDe = (s: SolicitacaoTransicao) => ({ status: s.status, solicitanteId: s.solicitante.id });
+
+// A ação aparece para o perfil quando a matriz permite; o que não cabe ao perfil fica fora da barra de ações
+export const visivelPara = (acao: AcaoId, perfil: PerfilUsuario) => valorMatriz(acao, perfil) !== null;

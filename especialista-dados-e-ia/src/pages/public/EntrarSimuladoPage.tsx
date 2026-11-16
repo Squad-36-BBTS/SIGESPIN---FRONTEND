@@ -7,7 +7,7 @@ import { Logo, Spinner } from '@/components/common/ui';
 import { useAuth } from '@/hooks';
 import { mensagemErro } from '@/services/api';
 import { resetarMock } from '@/services/mock/mockServer';
-import { SENHA_DEMO, USUARIOS } from '@/services/mock/seed';
+import { SENHA_DEMO, USUARIOS, USUARIOS_SELETOR } from '@/services/mock/seed';
 import { rotuloUsuario } from '@/utils/constants';
 
 // Entrada simples usada quando o fluxo de acesso (landing e login) não está nesta versão.
@@ -39,7 +39,7 @@ export default function EntrarSimuladoPage() {
         <h1 className="mt-6 text-xl font-bold">Entrar como</h1>
         <p className="mt-1 text-sm text-bb-muted">Login simulado. A landing page e o login completo fazem parte do fluxo de acesso.</p>
         <div className="mt-5 grid gap-2">
-          {USUARIOS.filter((u) => u.ativo).map((u) => (
+          {USUARIOS_SELETOR.map((id) => USUARIOS.find((x) => x.id === id)!).map((u) => (
             <button
               key={u.id}
               className="flex items-center gap-3 rounded-lg border border-bb-line px-3 py-2.5 text-left transition hover:border-bb-blue hover:bg-bb-blue-light"

@@ -22,10 +22,11 @@ export interface ItemMenu {
   to: string;
   label: string;
   icon: LucideIcon;
-  // Posição no menu: 10 Minha fila · 20 Portfólio · 30 Dashboard · 40 Nova demanda · 50 Ações de mobilização · 60 Configurar Kanban · 90 Meu perfil
+  // Posição no menu: 10 Minha fila · 20 Portfólio · 30 Dashboard · 40 Nova demanda · 45 Recomendações ·
+  // 50 Ações de mobilização · 55 Notificações · 60 Configurar Kanban · 65 Propostas de configuração · 90 Meu perfil
   ordem: number;
   end?: boolean;
-  contador?: 'fila';
+  contador?: 'fila' | 'notificacoes';
   // Também aparece como botão na barra superior
   destaque?: boolean;
   mostrar?: (u: Usuario) => boolean;
@@ -77,7 +78,7 @@ export interface ModalProjetoProps {
 }
 
 export interface AcaoProjeto {
-  // Ids usados pelas abas do detalhe: 'emitirParecer', 'decidirTransicao', 'validarEntrega'
+  // Ids usados pelas abas do detalhe: 'emitirParecer', 'decidirAvanco', 'cancelarAvanco', 'validarEntrega'
   id: string;
   ordem: number;
   // null = a ação não aparece para este usuário

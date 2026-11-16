@@ -6,10 +6,11 @@ import { Avatar, Logo } from '@/components/common/ui';
 import { MENU_FLUXOS, temRota } from '@/fluxos/registro';
 import type { ItemMenu } from '@/fluxos/tipos';
 import { useAuth } from '@/hooks';
-import { filaService } from '@/services';
+import { filaService, notificacaoService } from '@/services';
 import { USE_MOCK } from '@/services/api';
 import type { MinhaFila, Usuario } from '@/types/domain';
 import { rotuloUsuario } from '@/utils/constants';
+import { contarNaoLidas } from '@/utils/notificacoes';
 
 type Contador = NonNullable<ItemMenu['contador']>;
 
@@ -23,9 +24,10 @@ const MENU = [...BASE, ...MENU_FLUXOS].sort((a, b) => a.ordem - b.ordem);
 // Itens que contam como pendência do próprio usuário
 function totalFila(f: MinhaFila, u: Usuario) {
   if (u.perfil === 'ANALISTA') return f.triagem.length;
-  if (u.perfil === 'ESPECIALISTA') return f.consultasPendentes.length + f.solicitacoesPendentes.length;
-  return f.entregasParaValidar.length;
+  if (u.perfil === 'ESPECIALISTA') return f.consultasPendentes.length + f.solicitacoesPendentes.length + f.propostasPendentes.length;
+  return f.entregasParaValidar.length + f.recomendacoesPendentes.length;
 }
+const usaContador = (c: Contador) => MENU.some((i) => i.contador === c);
 
 const STORAGE_TRILHO = '@SIGES_PIN:menu-trilho';
 
@@ -68,6 +70,7 @@ export function AppLayout() {
       const c: Partial<Record<Contador, number>> = {};
       try {
         c.fila = totalFila(await filaService.minha(), usuario);
+        if (usaContador('notificacoes')) c.notificacoes = contarNaoLidas(await notificacaoService.listar(), usuario.id);
       } catch {
         // contadores são opcionais
       }

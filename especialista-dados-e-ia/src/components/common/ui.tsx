@@ -127,7 +127,6 @@ export function BotaoAcao({
     <div className="flex max-w-[280px] flex-col gap-1">
       <button type="button" className="btn border border-dashed border-bb-line-2 bg-slate-50 text-slate-400" disabled>
         {icon} {children}
-        {permissao.aDefinir && <SeloDiscussao />}
       </button>
       <span className="text-[11px] leading-snug text-bb-muted">{permissao.motivo}</span>
     </div>

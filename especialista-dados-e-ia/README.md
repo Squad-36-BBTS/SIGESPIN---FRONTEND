@@ -1,51 +1,63 @@
-# SIGES-PIN — Front-end
+# SIGES-PIN — Front-end · branch `especialista-dados-e-ia`
 
 Front-end do Sistema Corporativo de Gestão do Portfólio de Inovação da BBTS.
-React 18 + Vite + TypeScript + Tailwind CSS 3.4.
+React 18 + Vite + TypeScript + Tailwind CSS 3.4. Regras da **Fase 3** ([docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md)).
+
+Esta branch é o **zip 4** da divisão da equipe (Angelo): a base comum do site mais **parecer, gestão do projeto, notificações e detalhe**. As telas dos outros integrantes chegam pelas branches deles (veja [Divisão da equipe](#divisão-da-equipe)).
+
+## O que esta branch tem
+
+| Arquivo | O que mudou |
+|---|---|
+| `src/fluxos/parecer/ParecerModal.tsx` | Parecer independente ou em resposta à consulta dirigida a quem emite; fundamentação e conclusão obrigatórias; evidências do projeto opcionais. |
+| `src/fluxos/parecer/projeto.tsx` | Botão Emitir parecer (ou Responder consulta, quando há consulta para você). |
+| `src/fluxos/parecer/fila.tsx` | Consultas dirigidas a você. |
+| `src/fluxos/gestao/` | Novo: editar projeto (dados, arena, Lei do Bem, dispêndio, Demandante e Analista responsáveis) com versão e justificativa, preservando o rascunho em conflito; arquivar e reativar com versão e justificativa. |
+| `src/fluxos/visao-geral/NotificacoesPage.tsx` | Novo: notificações globais das movimentações feitas por Especialistas, com contador de não lidas no menu. |
+| `src/fluxos/visao-geral/rotas.tsx` | Item Notificações no menu. |
+| `src/fluxos/visao-geral/DashboardPage.tsx` | Indicadores do portfólio ativo e contagem de arquivados. |
+| `src/fluxos/visao-geral/AcoesMobilizacaoPage.tsx` | Sem o botão “Nova ação”, que não está na matriz. |
+| `src/pages/app/ProjetoDetalhesPage.tsx` | Compartilhada: 10 abas do guia (qualificação, consultas e pareceres, TRL, movimentações e governança, entregas e validações, correções, histórico de gestão…), avisos de arquivado, legado e pedido pendente. |
+
+Telas compartilhadas sob responsabilidade desta branch: `src/pages/app/ProjetoDetalhesPage.tsx`.
 
 ## Como rodar
 
 ```bash
+cp .env.example .env
 npm install
 npm run dev        # http://localhost:3000
 npm run build      # checagem de tipos + build de produção
 ```
 
-Por padrão o app roda em **modo demonstração** (`VITE_USE_MOCK=true` no `.env`), com um banco em memória que
-aplica as regras da revisão 3 (docs/RELATORIO_MUDANCAS.md). Na tela de login há atalhos para os três perfis
-(senha dos usuários de teste em `src/services/mock/seed.ts`). Em "Meu perfil" é possível restaurar os dados.
+**Modo demonstração.** É o padrão (`VITE_USE_MOCK=true` no `.env`): o app usa um banco no navegador que aplica as regras da Fase 3. A chave é `@SIGES_PIN:mockdb:v5`.
 
-Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`.
+**Usuários de teste.** Ficam em `src/services/mock/seed.ts`, junto com a senha: Mariana Costa e Bruno Alves (Demandantes), Rafael Lima (Analista), Fernanda Rocha e João Prado (Especialistas). Para esta branch, entre como **João Prado (Especialista · Dados e IA)**.
 
-## Visão geral
+**Restaurar os dados.** Em **Meu perfil** ou na tela de entrada “Entrar como”, use **Restaurar dados**.
 
-O [todo.md](todo.md) explica o site inteiro: fluxos, telas, regras, cores, design e organização do código.
+**Back-end real.** Para usar o back-end Spring Boot (`http://localhost:8080`, via proxy `/api`), defina `VITE_USE_MOCK=false`.
 
-## Fluxos
+## Como os fluxos se encaixam
 
-O código está dividido em uma **base comum** e **quatro zips de fluxo**, um por perfil do login simulado.
-Cada fluxo fica em `src/fluxos/<pasta>/`. A base encontra os fluxos sozinha; sem um deles, o app continua rodando sem aquelas telas.
+Cada fluxo fica em `src/fluxos/<pasta>/` e pode ter `rotas.tsx` (páginas e menu), `fila.tsx` (seção da Minha fila) e `projeto.tsx` (botões e formulários do Detalhe do projeto). A base encontra os fluxos sozinha, então esta branch roda sozinha:
+- sem o zip 1, o `/login` vira a entrada simplificada “Entrar como”;
+- sem o zip 3, o Configurar Kanban e o Meu perfil não aparecem no menu.
 
-| Zip | Pastas | Telas e ações |
-|---|---|---|
-| Base comum (em todos) | `src/pages`, `src/components`, `src/services`… | Minha fila, Portfólio e Detalhe do projeto (com dono: zips 3 e 4), menu, dados simulados |
-| 1 · Demandante + acesso | `acesso/`, `demandante/` | Landing, login, cadastro (pedido de acesso), nova demanda, validação de entregas |
-| 2 · Analista | `analista/` | Qualificação, consulta a Especialista, avaliação TRL, movimentação, entregas |
-| 3 · Especialista · Segurança da informação | `governanca/` + Portfólio e Minha fila | Decisão de governança, configurar Kanban, meu perfil, portfólio, minha fila |
-| 4 · Especialista · Dados e IA | `parecer/`, `visao-geral/` + Detalhe do projeto | Parecer técnico, dashboard, ações de mobilização, detalhe do projeto |
+## Divisão da equipe
 
-## Estrutura
+| Zip / branch | Integrante | Login de teste | Pastas |
+|---|---|---|---|
+| 1 · `fluxo-demandante-acesso` | Kaua | Mariana Costa | `acesso/`, `demandante/`, `recomendacoes/` |
+| 2 · `fluxo-analista` | Lucas | Rafael Lima | `analista/`, `propostas/` |
+| 3 · `especialista-seguranca` | Abraão | Fernanda Rocha | `governanca/` |
+| **4 · `especialista-dados-e-ia` (esta)** | Angelo | João Prado | `parecer/`, `gestao/`, `visao-geral/` |
 
-```
-src/
-├── fluxos/          # tipos.ts e registro.ts (contrato) + uma pasta por fluxo
-├── components/      # common (ui), layout (menu lateral direito), fila, projeto (formulário com revisão), radar, trl
-├── contexts/        # AuthContext (sessão e perfil)
-├── hooks/           # useAuth, useAsync, useDebounce, useReveal
-├── pages/           # base: app/ (Minha fila, Portfólio, Detalhe) e public/ (entrada simplificada, 404)
-├── services/        # api.ts (axios), index.ts (serviços), mock/ (banco em memória)
-├── types/           # entidades e DTOs do domínio
-└── utils/           # rótulos, TRL, formatadores e permissoes.ts (matriz de ações)
-```
+**Regra do grupo.** Cada pessoa altera só as suas pastas e as telas compartilhadas que são dela. A base é igual nas quatro branches; mudanças nela precisam ser combinadas com o grupo.
 
-Documentação: [docs/RELATORIO_MUDANCAS.md](docs/RELATORIO_MUDANCAS.md) (revisão 3, vigente) e [docs/PROPOSTA_FRONTEND.md](docs/PROPOSTA_FRONTEND.md) (proposta inicial).
+## Documentação
+
+- [todo.md](todo.md): o site inteiro, com fluxos, telas, regras, cores e organização do código.
+- [docs/GUIA_REGRAS_FASE3.md](docs/GUIA_REGRAS_FASE3.md): o guia de regras de negócio da Fase 3.
+- [docs/FASE3_MUDANCAS.md](docs/FASE3_MUDANCAS.md): o que mudou, por integrante.
+- A pasta `sigespin/` é outro projeto Vite que veio da `main` e não é alterado por esta branch.

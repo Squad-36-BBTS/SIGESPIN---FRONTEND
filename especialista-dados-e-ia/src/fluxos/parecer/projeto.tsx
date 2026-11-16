@@ -1,18 +1,23 @@
 import { MessagesSquare } from 'lucide-react';
+import { useMemo } from 'react';
 
 import type { ConsultaEspecialista } from '@/types/domain';
 import { podeResponderConsulta } from '@/utils/constants';
-import { negado, noProjeto, visivelPara } from '@/utils/permissoes';
+import { noProjeto, visivelPara } from '@/utils/permissoes';
 
 import type { AcaoProjeto, ModalProjetoProps } from '../tipos';
 import { ParecerModal } from './ParecerModal';
 
-function ModalParecer({ projeto, alvo, onFechar, onFeito }: ModalProjetoProps) {
-  const c = alvo as ConsultaEspecialista | null;
-  return <ParecerModal consulta={c && { ...c, projetoTitulo: projeto.titulo }} onFechar={onFechar} onFeito={onFeito} />;
+// alvo: a consulta respondida, ou null para um parecer independente
+function ModalParecer({ projeto, aberto, alvo, onFechar, onFeito }: ModalProjetoProps) {
+  const dados = useMemo(
+    () => (aberto ? { projetoId: projeto.id, projetoTitulo: projeto.titulo, evidencias: projeto.evidencias, consulta: (alvo as ConsultaEspecialista | null) ?? null } : null),
+    [aberto, alvo, projeto],
+  );
+  return <ParecerModal alvo={dados} onFechar={onFechar} onFeito={onFeito} />;
 }
 
-// Especialista: emitir parecer técnico. O parecer subsidia a análise; não é decisão de governança.
+// Especialista: emite parecer independente ou responde à consulta dirigida a ele (aba Consultas e pareceres)
 const acoes: AcaoProjeto[] = [
   {
     id: 'emitirParecer',
@@ -21,11 +26,11 @@ const acoes: AcaoProjeto[] = [
       if (!visivelPara('emitirParecer', usuario.perfil)) return null;
       const paraMim = p.consultas.find((c) => podeResponderConsulta(c, usuario));
       return {
-        perm: paraMim ? noProjeto('emitirParecer', usuario, p) : negado('Não há consulta pendente para você neste projeto.'),
-        rotulo: 'Emitir parecer',
+        perm: noProjeto('emitirParecer', usuario, p),
+        rotulo: paraMim ? 'Responder consulta' : 'Emitir parecer',
         icon: <MessagesSquare className="h-4 w-4" />,
         primaria: !!paraMim,
-        alvo: paraMim,
+        alvo: paraMim ?? null,
       };
     },
     Modal: ModalParecer,

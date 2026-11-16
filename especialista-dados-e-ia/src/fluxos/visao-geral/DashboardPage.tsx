@@ -1,5 +1,5 @@
 import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } from 'chart.js';
-import { ArrowRight, Gauge, Inbox, Layers, Megaphone, Plus, X } from 'lucide-react';
+import { Archive, ArrowRight, Gauge, Inbox, Layers, Megaphone, Plus, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Link } from 'react-router-dom';
@@ -123,12 +123,13 @@ export default function DashboardPage() {
 
       {m.erro && <Erro texto={m.erro} onTentar={m.recarregar} />}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {!d ? (
-          [1, 2, 3].map((i) => <Skeleton key={i} className="h-[132px]" />)
+          [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[132px]" />)
         ) : (
           <>
-            <Kpi titulo="Projetos" valor={d.totalProjetos} detalhe={temFiltro ? 'Com os filtros aplicados' : 'Em todo o portfólio'} icon={<Layers className="h-4 w-4" />} to={`/app/portfolio?${qs({})}`} />
+            <Kpi titulo="Projetos ativos" valor={d.totalProjetos} detalhe={temFiltro ? 'Com os filtros aplicados' : 'Em todo o portfólio'} icon={<Layers className="h-4 w-4" />} to={`/app/portfolio?${qs({})}`} />
+            <Kpi titulo="Arquivados" valor={d.arquivados} detalhe="Consultáveis, fora dos indicadores" icon={<Archive className="h-4 w-4" />} to={`/app/portfolio?${qs({ arquivamento: 'ARQUIVADOS' })}`} />
             <Kpi
               titulo="TRL médio"
               valor={

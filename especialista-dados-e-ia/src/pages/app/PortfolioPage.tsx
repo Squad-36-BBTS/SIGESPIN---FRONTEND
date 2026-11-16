@@ -3,11 +3,11 @@ import { ChevronLeft, ChevronRight, Columns3, List, Plus, Search, Settings2, Use
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { ArenaBadge, EtapaBadge, Erro, OrigemBadge, PageHeader, Skeleton, TarefaBadge, TrlMeter, Vazio } from '@/components/common/ui';
+import { ArenaBadge, EtapaBadge, Erro, OrigemBadge, PageHeader, Selo, Skeleton, TarefaBadge, TrlMeter, Vazio } from '@/components/common/ui';
 import { temRota } from '@/fluxos/registro';
 import { useAsync, useAuth, useDebounce } from '@/hooks';
 import { campanhaService, kanbanService, projetoService } from '@/services';
-import type { ArenaTipo, EstadoTarefa, EtapaKanban, OrigemDemanda, Projeto } from '@/types/domain';
+import type { ArenaTipo, EstadoTarefa, EtapaKanban, FiltroArquivamento, OrigemDemanda, Projeto } from '@/types/domain';
 import { ARENA_LABEL, ARENAS, ORIGEM_LABEL, TAREFA_LABEL, TAREFAS, TIPO_CAMPANHA_LABEL, areaSigla } from '@/utils/constants';
 import { formatarData } from '@/utils/formatters';
 import { porPerfil } from '@/utils/permissoes';
@@ -24,15 +24,17 @@ export default function PortfolioPage() {
   const [origem, setOrigem] = useState<OrigemDemanda | ''>(params.get('campanha') ? 'INDUZIDA' : ((params.get('origem') as OrigemDemanda) ?? ''));
   const [campanhaId, setCampanhaId] = useState<number | ''>(Number(params.get('campanha')) || '');
   const [pendencia, setPendencia] = useState<EstadoTarefa | ''>((params.get('pendencia') as EstadoTarefa) ?? '');
+  // Arquivados continuam consultáveis; por padrão a lista mostra só os projetos ativos
+  const [arquivamento, setArquivamento] = useState<FiltroArquivamento>((params.get('arquivamento') as FiltroArquivamento) || 'ATIVOS');
   const [pagina, setPagina] = useState(0);
   const buscaDebounced = useDebounce(busca, 300);
   const campanhas = useAsync(() => campanhaService.listar(), []);
   const config = useAsync(() => kanbanService.configuracao(), []);
 
-  const base = { busca: buscaDebounced, arena, origem, campanhaId, pendencia };
+  const base = { busca: buscaDebounced, arena, origem, campanhaId, pendencia, arquivamento };
   const { dados, carregando, erro, recarregar } = useAsync(
     () => (visao === 'kanban' ? projetoService.listar(base) : projetoService.listar({ ...base, etapaId, pagina, tamanho: TAMANHO_PAGINA })),
-    [visao, buscaDebounced, arena, etapaId, origem, campanhaId, pendencia, pagina],
+    [visao, buscaDebounced, arena, etapaId, origem, campanhaId, pendencia, arquivamento, pagina],
   );
 
   const mudarVisao = (v: 'lista' | 'kanban') => {
@@ -42,7 +44,7 @@ export default function PortfolioPage() {
     setParams(p, { replace: true });
   };
 
-  const temFiltro = !!(busca || arena || origem || campanhaId || pendencia || (visao === 'lista' && etapaId));
+  const temFiltro = !!(busca || arena || origem || campanhaId || pendencia || arquivamento !== 'ATIVOS' || (visao === 'lista' && etapaId));
   const limpar = () => {
     setBusca('');
     setArena('');
@@ -50,6 +52,7 @@ export default function PortfolioPage() {
     setOrigem('');
     setCampanhaId('');
     setPendencia('');
+    setArquivamento('ATIVOS');
     setPagina(0);
   };
   const mudar =
@@ -65,7 +68,7 @@ export default function PortfolioPage() {
       <PageHeader
         eyebrow="Portfólio"
         titulo="Projetos de inovação"
-        descricao="Todo o portfólio, visível para os três perfis. As ações dependem do perfil e da etapa de cada projeto."
+        descricao="Todo o portfólio, visível para os três perfis. Busque por texto, arena ou etapa e abra os detalhes; as ações dependem do perfil, do vínculo com o projeto e do estado do registro."
         acoes={
           <>
             {temRota('/app/kanban/configuracao') && (
@@ -160,6 +163,11 @@ export default function PortfolioPage() {
               </option>
             ))}
           </select>
+          <select className="input h-9 w-auto" value={arquivamento} onChange={(e) => mudar(setArquivamento)(e.target.value as FiltroArquivamento)} aria-label="Arquivamento">
+            <option value="ATIVOS">Projetos ativos</option>
+            <option value="ARQUIVADOS">Arquivados</option>
+            <option value="TODOS">Ativos e arquivados</option>
+          </select>
           {temFiltro && (
             <button className="btn-ghost h-9" onClick={limpar}>
               <X className="h-4 w-4" /> Limpar
@@ -194,15 +202,16 @@ function Lista({ projetos, total, pagina, setPagina, carregando, limpar }: { pro
   return (
     <div className={`card overflow-hidden transition-opacity ${carregando ? 'opacity-60' : ''}`}>
       <div className="scroll-fino overflow-x-auto">
-        <table className="w-full min-w-[980px] text-sm">
+        <table className="w-full min-w-[1120px] text-sm">
           <thead className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wider text-bb-muted">
             <tr>
               <th className="px-5 py-3">Projeto</th>
+              <th className="px-3 py-3">Arena</th>
               <th className="px-3 py-3">Etapa</th>
               <th className="px-3 py-3">Pendências</th>
               <th className="px-3 py-3">Origem</th>
               <th className="w-32 px-3 py-3">TRL</th>
-              <th className="px-3 py-3">Analista</th>
+              <th className="px-3 py-3">Responsáveis</th>
               <th className="px-5 py-3 text-right">Atualizado</th>
             </tr>
           </thead>
@@ -213,9 +222,13 @@ function Lista({ projetos, total, pagina, setPagina, carregando, limpar }: { pro
                   <Link to={`/app/projetos/${p.id}`} className="font-bold text-bb-slate hover:text-bb-blue" onClick={(e) => e.stopPropagation()}>
                     {p.titulo}
                   </Link>
+                  {p.arquivado && <Selo classe="ml-2 border-slate-300 bg-slate-100 text-slate-600">Arquivado</Selo>}
                   <p className="truncate text-xs text-bb-muted">
                     {areaSigla(p.areaDemandanteId)} · {p.descricaoDor}
                   </p>
+                </td>
+                <td className="px-3 py-3.5">
+                  <ArenaBadge arena={p.arena} />
                 </td>
                 <td className="px-3 py-3.5">
                   <EtapaBadge etapa={p.etapa} />
@@ -234,7 +247,10 @@ function Lista({ projetos, total, pagina, setPagina, carregando, limpar }: { pro
                     <TrlMeter trl={p.trlAtual} className="flex-1" />
                   </div>
                 </td>
-                <td className="px-3 py-3.5 text-slate-600">{p.analistaResponsavel?.nome ?? <span className="italic text-slate-400">Sem analista</span>}</td>
+                <td className="px-3 py-3.5 text-xs text-slate-600">
+                  <span className="block">{p.demandante?.nome ?? <span className="italic text-amber-700">Sem Demandante</span>}</span>
+                  <span className="block text-bb-muted">{p.analistaResponsavel?.nome ?? <span className="italic text-slate-400">Sem analista</span>}</span>
+                </td>
                 <td className="px-5 py-3.5 text-right text-bb-muted">{formatarData(p.atualizadoEm)}</td>
               </tr>
             ))}
@@ -258,7 +274,8 @@ function Lista({ projetos, total, pagina, setPagina, carregando, limpar }: { pro
   );
 }
 
-// Kanban de consulta: colunas vêm da configuração. Movimentações acontecem pelo detalhe do projeto.
+// Kanban de consulta: colunas vêm da configuração. A movimentação (direta ou pedido de avanço) acontece
+// no detalhe do projeto, onde a tela confere perfil, percurso e pedidos pendentes.
 function Kanban({ projetos, etapas, carregando }: { projetos?: Projeto[]; etapas: EtapaKanban[]; carregando: boolean }) {
   if (carregando || !projetos)
     return (
@@ -300,6 +317,7 @@ function CartaoKanban({ p }: { p: Projeto }) {
     <Link to={`/app/projetos/${p.id}`} className="group block rounded-xl border border-bb-line bg-white p-3 shadow-card transition hover:-translate-y-0.5 hover:border-bb-blue/40 hover:shadow-hover">
       <div className="flex flex-wrap items-center gap-1">
         <OrigemBadge origem={p.origem} campanha={p.campanha} />
+        {p.arquivado && <Selo classe="border-slate-300 bg-slate-100 text-slate-600">Arquivado</Selo>}
         <span className="ml-auto text-[11px] font-bold text-bb-blue">TRL {p.trlAtual}</span>
       </div>
       <p className="mt-2 text-sm font-bold leading-snug group-hover:text-bb-blue">{p.titulo}</p>
