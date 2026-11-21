@@ -59,7 +59,7 @@ import { modoMovimentacao, noProjeto, podeCancelar, porPerfil, type AcaoId } fro
 import { USUARIO_KEY } from '../api';
 import { criarSeed, SENHA_DEMO, type MockDb, type ProjetoDb } from './seed';
 
-const DB_KEY = '@SIGES_PIN:mockdb:v5';
+const DB_KEY = '@SIGES_PIN:mockdb:v6';
 
 function carregar(): MockDb {
   try {
@@ -142,8 +142,8 @@ const temSolicitacaoPendente = (projetoId: number) => db.solicitacoes.some((s) =
 function pendencias(p: ProjetoDb): EstadoTarefa[] {
   const r: EstadoTarefa[] = [];
   const terminal = etapaResumo(p.etapaId).terminal;
-  // Aguarda triagem enquanto não há qualificação nem Analista responsável
-  if (!p.arquivado && !terminal && !p.analistaId && !db.qualificacoes.some((q) => q.projetoId === p.id)) r.push('AGUARDANDO_TRIAGEM');
+  // Aguarda triagem enquanto não há qualificação, mesmo que já exista um Analista responsável
+  if (!p.arquivado && !terminal && !db.qualificacoes.some((q) => q.projetoId === p.id)) r.push('AGUARDANDO_TRIAGEM');
   if (db.consultas.some((c) => c.projetoId === p.id && c.status === 'PENDENTE')) r.push('AGUARDANDO_PARECER');
   if (temSolicitacaoPendente(p.id)) r.push('AGUARDANDO_GOVERNANCA');
   if (db.entregas.some((e) => e.projetoId === p.id && !e.validacoes.length)) r.push('AGUARDANDO_VALIDACAO');
@@ -479,6 +479,7 @@ export async function listarProjetos(f: FiltroPortfolio = {}): Promise<Pagina<Pr
   await espera(200);
   const busca = (f.busca ?? '').trim().toLowerCase();
   const arquivamento = f.arquivamento ?? 'ATIVOS';
+  const limite = f.periodoDias ? Date.now() - Number(f.periodoDias) * 86400000 : 0;
   let itens = db.projetos
     .filter(
       (p) =>
@@ -487,6 +488,7 @@ export async function listarProjetos(f: FiltroPortfolio = {}): Promise<Pagina<Pr
         (!f.etapaId || p.etapaId === f.etapaId) &&
         (!f.origem || p.origem === f.origem) &&
         (!f.campanhaId || p.campanhaId === f.campanhaId) &&
+        new Date(p.criadoEm).getTime() >= limite &&
         (arquivamento === 'TODOS' || p.arquivado === (arquivamento === 'ARQUIVADOS')),
     )
     .map(enriquecer);
@@ -858,6 +860,45 @@ export async function registrarCorrecao(projetoId: number, req: CorrecaoRequest)
   db.correcoes.push(c);
   p.atualizadoEm = agora();
   salvar();
+}
+
+// ---------------- Evidências (envio simulado) ----------------
+
+const FORMATOS_EVIDENCIA = ['jpg', 'jpeg', 'pdf', 'doc', 'docx'];
+const MIME_EVIDENCIA: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+// Tudo ou nada: se um arquivo for recusado, nenhum é registrado. Só os metadados ficam no navegador.
+export async function anexarEvidencias(projetoId: number, arquivos: File[], descricao: string): Promise<Evidencia[]> {
+  const p = projetoOu404(projetoId);
+  const u = exigir('anexarEvidencia', p);
+  await espera(500);
+  if (!arquivos.length) throw invalido('Escolha ao menos um arquivo.');
+  for (const f of arquivos) {
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!FORMATOS_EVIDENCIA.includes(ext)) throw new ApiError(422, 'TIPO_INVALIDO', `${f.name} foi recusado: use JPEG/JPG, PDF ou Word (DOC/DOCX).`, { arquivo: f.name });
+    if (f.size > 10 * 1024 * 1024) throw new ApiError(422, 'TAMANHO_INVALIDO', `${f.name} foi recusado: o limite é 10 MB por arquivo.`, { arquivo: f.name });
+  }
+  const novas: Evidencia[] = arquivos.map((f) => ({
+    id: novoId(),
+    projetoId,
+    nomeArquivo: f.name,
+    tipoArquivo: MIME_EVIDENCIA[f.name.split('.').pop()?.toLowerCase() ?? ''] ?? f.type,
+    tamanhoBytes: f.size,
+    dataUpload: agora(),
+    enviadaPor: resumo(u),
+    estadoEnvio: 'ENVIADO',
+    descricao: texto(descricao) || undefined,
+  }));
+  db.evidencias.push(...novas);
+  p.atualizadoEm = agora();
+  salvar();
+  return novas;
 }
 
 // ---------------- Recomendações ----------------

@@ -10,7 +10,7 @@ import { filaService, notificacaoService } from '@/services';
 import { USE_MOCK } from '@/services/api';
 import type { MinhaFila, Usuario } from '@/types/domain';
 import { rotuloUsuario } from '@/utils/constants';
-import { contarNaoLidas } from '@/utils/notificacoes';
+import { contarNaoLidas, EVENTO_NOTIFICACOES_VISTAS } from '@/utils/notificacoes';
 
 type Contador = NonNullable<ItemMenu['contador']>;
 
@@ -47,6 +47,14 @@ export function AppLayout() {
     }
   });
   const [contadores, setContadores] = useState<Partial<Record<Contador, number>>>({});
+  const [versaoContadores, setVersaoContadores] = useState(0);
+
+  // Recalcula os contadores quando a lista de notificações é aberta
+  useEffect(() => {
+    const recontar = () => setVersaoContadores((v) => v + 1);
+    window.addEventListener(EVENTO_NOTIFICACOES_VISTAS, recontar);
+    return () => window.removeEventListener(EVENTO_NOTIFICACOES_VISTAS, recontar);
+  }, []);
 
   useEffect(() => {
     try {
@@ -79,7 +87,7 @@ export function AppLayout() {
     return () => {
       vivo = false;
     };
-  }, [location.pathname, usuario]);
+  }, [location.pathname, usuario, versaoContadores]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setAberto(false);

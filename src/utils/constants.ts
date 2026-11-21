@@ -23,7 +23,7 @@ export const PERFIL_LABEL: Record<PerfilUsuario, string> = {
 export const PERFIL_DESCRICAO: Record<PerfilUsuario, string> = {
   DEMANDANTE: 'Cadastra demandas, acompanha o portfólio, registra correções e valida entregas quando é o responsável pelo projeto. Responde a recomendações destinadas a ele.',
   ANALISTA: 'Qualifica demandas, encaminha consultas, registra TRL, movimenta em percurso livre, solicita governança, submete entregas, recomenda demandas e propõe alterações no quadro.',
-  ESPECIALISTA: 'Emite parecer, registra TRL, movimenta projetos, decide pedidos, submete entregas, recomenda demandas, administra o quadro e atualiza ou arquiva projetos.',
+  ESPECIALISTA: 'Emite parecer, registra TRL, movimenta projetos (inclusive percursos governados, com justificativa e notificação para todos), decide pedidos, submete entregas, recomenda demandas, administra o quadro e atualiza ou arquiva projetos.',
 };
 
 export function rotuloUsuario(u: Pick<Usuario, 'perfil' | 'areaTecnica'>): string {
@@ -75,6 +75,14 @@ export const ARENA_COR: Record<ArenaTipo, string> = {
 };
 
 export const ARENAS: ArenaTipo[] = ['EFICIENCIA_OPERACIONAL', 'NEGOCIOS_DIGITAIS', 'SEGURANCA_INTEGRADA', 'A_DEFINIR'];
+
+// Recorte por data de registro, igual no dashboard e no portfólio
+export const PERIODOS_REGISTRO = [
+  { v: '', t: 'Todo o período' },
+  { v: 30, t: 'Últimos 30 dias' },
+  { v: 90, t: 'Últimos 90 dias' },
+  { v: 365, t: 'Últimos 12 meses' },
+] as const;
 
 // Paleta oferecida na configuração do Kanban
 export const CORES_ETAPA = ['#F59E0B', '#0EA5E9', '#6366F1', '#10B981', '#F43F5E', '#8B5CF6', '#14B8A6', '#64748B'];

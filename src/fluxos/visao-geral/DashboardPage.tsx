@@ -10,17 +10,10 @@ import { temRota } from '@/fluxos/registro';
 import { useAsync, useAuth } from '@/hooks';
 import { dashboardService, kanbanService, projetoService } from '@/services';
 import type { FiltroDashboard, OrigemDemanda } from '@/types/domain';
-import { ARENA_COR, ARENA_LABEL, ARENAS, ORIGEM_LABEL, PERFIL_LABEL, TAREFA_RESPONSAVEL, TAREFAS } from '@/utils/constants';
+import { ARENA_COR, ARENA_LABEL, ARENAS, ORIGEM_LABEL, PERFIL_LABEL, PERIODOS_REGISTRO, TAREFA_RESPONSAVEL, TAREFAS } from '@/utils/constants';
 import { porPerfil } from '@/utils/permissoes';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip);
-
-const PERIODOS = [
-  { v: '', t: 'Todo o período' },
-  { v: 30, t: 'Últimos 30 dias' },
-  { v: 90, t: 'Últimos 90 dias' },
-  { v: 365, t: 'Últimos 12 meses' },
-] as const;
 
 function Kpi({ titulo, valor, detalhe, icon, to }: { titulo: string; valor: ReactNode; detalhe: string; icon: ReactNode; to?: string }) {
   const corpo = (
@@ -47,11 +40,14 @@ export default function DashboardPage() {
   const [filtro, setFiltro] = useState<FiltroDashboard>({ periodoDias: '', etapaId: '', origem: '' });
   const m = useAsync(() => dashboardService.metricas(filtro), [filtro.periodoDias, filtro.etapaId, filtro.origem]);
   const config = useAsync(() => kanbanService.configuracao(), []);
-  const recentes = useAsync(() => projetoService.listar({ tamanho: 5 }), []);
+  // A lista de recentes usa os mesmos filtros dos indicadores
+  const recentes = useAsync(() => projetoService.listar({ ...filtro, tamanho: 5 }), [filtro.periodoDias, filtro.etapaId, filtro.origem]);
   const d = m.dados;
   const temFiltro = !!(filtro.periodoDias || filtro.etapaId || filtro.origem);
+  // Cada indicador leva ao portfólio com o mesmo recorte: período, origem e etapa
   const qs = (extra: Record<string, string | number>) => {
     const p = new URLSearchParams();
+    if (filtro.periodoDias) p.set('periodo', String(filtro.periodoDias));
     if (filtro.origem) p.set('origem', String(filtro.origem));
     if (filtro.etapaId) p.set('etapa', String(filtro.etapaId));
     Object.entries(extra).forEach(([k, v]) => p.set(k, String(v)));
@@ -89,7 +85,7 @@ export default function DashboardPage() {
       <div className="card flex flex-wrap items-center gap-2 p-3">
         <span className="px-1 text-sm font-semibold text-bb-muted">Filtros</span>
         <select className="input h-9 w-auto" value={filtro.periodoDias} onChange={(e) => setFiltro({ ...filtro, periodoDias: Number(e.target.value) || '' })} aria-label="Período de registro">
-          {PERIODOS.map((p) => (
+          {PERIODOS_REGISTRO.map((p) => (
             <option key={p.t} value={p.v}>
               {p.t}
             </option>
@@ -232,15 +228,21 @@ export default function DashboardPage() {
 
       <section className="card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">Atualizados recentemente</h2>
-          <Link to="/app/portfolio" className="inline-flex items-center gap-1 text-sm font-semibold text-bb-blue hover:underline">
+          <div>
+            <h2 className="font-bold">Atualizados recentemente</h2>
+            <p className="text-xs text-bb-muted">{temFiltro ? 'Com os filtros aplicados acima.' : 'Últimas atualizações de todo o portfólio ativo.'}</p>
+          </div>
+          <Link to={`/app/portfolio?${qs({})}`} className="inline-flex items-center gap-1 text-sm font-semibold text-bb-blue hover:underline">
             Ver todos <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {!recentes.dados
-            ? [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-32" />)
-            : recentes.dados.itens.map((p) => (
+          {!recentes.dados ? (
+            [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-32" />)
+          ) : !recentes.dados.itens.length ? (
+            <p className="col-span-full rounded-xl border border-dashed border-bb-line-2 py-8 text-center text-sm text-bb-muted">Nenhum projeto com os filtros aplicados.</p>
+          ) : (
+            recentes.dados.itens.map((p) => (
                 <Link key={p.id} to={`/app/projetos/${p.id}`} className="card card-hover flex flex-col gap-2 p-4">
                   <div className="flex flex-wrap gap-1">
                     <EtapaBadge etapa={p.etapa} />
@@ -252,7 +254,8 @@ export default function DashboardPage() {
                     <ArenaBadge arena={p.arena} />
                   </div>
                 </Link>
-              ))}
+              ))
+          )}
         </div>
       </section>
     </div>

@@ -1,6 +1,6 @@
 // Tela compartilhada: vai em todos os zips, mas só o responsável altera. Responsável: Zip 3 · Especialista · Segurança da informação.
 import { ChevronLeft, ChevronRight, Columns3, List, Plus, Search, Settings2, UserRound, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ArenaBadge, EtapaBadge, Erro, OrigemBadge, PageHeader, Selo, Skeleton, TarefaBadge, TrlMeter, Vazio } from '@/components/common/ui';
@@ -8,7 +8,7 @@ import { temRota } from '@/fluxos/registro';
 import { useAsync, useAuth, useDebounce } from '@/hooks';
 import { campanhaService, kanbanService, projetoService } from '@/services';
 import type { ArenaTipo, EstadoTarefa, EtapaKanban, FiltroArquivamento, OrigemDemanda, Projeto } from '@/types/domain';
-import { ARENA_LABEL, ARENAS, ORIGEM_LABEL, TAREFA_LABEL, TAREFAS, TIPO_CAMPANHA_LABEL, areaSigla } from '@/utils/constants';
+import { ARENA_LABEL, ARENAS, ORIGEM_LABEL, PERIODOS_REGISTRO, TAREFA_LABEL, TAREFAS, TIPO_CAMPANHA_LABEL, areaSigla } from '@/utils/constants';
 import { formatarData } from '@/utils/formatters';
 import { porPerfil } from '@/utils/permissoes';
 
@@ -19,7 +19,9 @@ export default function PortfolioPage() {
   const [params, setParams] = useSearchParams();
   const visao = params.get('visao') === 'kanban' ? 'kanban' : 'lista';
   const [busca, setBusca] = useState(params.get('q') ?? '');
-  const [arena, setArena] = useState<ArenaTipo | ''>('');
+  const [arena, setArena] = useState<ArenaTipo | ''>((params.get('arena') as ArenaTipo) ?? '');
+  // Período de registro: vem do dashboard, para o portfólio mostrar o mesmo recorte dos indicadores
+  const [periodoDias, setPeriodoDias] = useState<number | ''>(Number(params.get('periodo')) || '');
   const [etapaId, setEtapaId] = useState<number | ''>(Number(params.get('etapa')) || '');
   const [origem, setOrigem] = useState<OrigemDemanda | ''>(params.get('campanha') ? 'INDUZIDA' : ((params.get('origem') as OrigemDemanda) ?? ''));
   const [campanhaId, setCampanhaId] = useState<number | ''>(Number(params.get('campanha')) || '');
@@ -31,11 +33,30 @@ export default function PortfolioPage() {
   const campanhas = useAsync(() => campanhaService.listar(), []);
   const config = useAsync(() => kanbanService.configuracao(), []);
 
-  const base = { busca: buscaDebounced, arena, origem, campanhaId, pendencia, arquivamento };
+  const base = { busca: buscaDebounced, arena, origem, campanhaId, pendencia, arquivamento, periodoDias };
   const { dados, carregando, erro, recarregar } = useAsync(
     () => (visao === 'kanban' ? projetoService.listar(base) : projetoService.listar({ ...base, etapaId, pagina, tamanho: TAMANHO_PAGINA })),
-    [visao, buscaDebounced, arena, etapaId, origem, campanhaId, pendencia, arquivamento, pagina],
+    [visao, buscaDebounced, arena, etapaId, origem, campanhaId, pendencia, arquivamento, periodoDias, pagina],
   );
+
+  // Os filtros ficam na URL: voltar, recarregar ou compartilhar o link mantém o mesmo recorte
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (visao === 'kanban') p.set('visao', 'kanban');
+    const valores: [string, string | number][] = [
+      ['q', buscaDebounced.trim()],
+      ['arena', arena],
+      ['etapa', etapaId],
+      ['origem', origem],
+      ['campanha', campanhaId],
+      ['pendencia', pendencia],
+      ['periodo', periodoDias],
+      ['arquivamento', arquivamento === 'ATIVOS' ? '' : arquivamento],
+    ];
+    valores.forEach(([k, v]) => v !== '' && p.set(k, String(v)));
+    if (p.toString() !== params.toString()) setParams(p, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visao, buscaDebounced, arena, etapaId, origem, campanhaId, pendencia, periodoDias, arquivamento]);
 
   const mudarVisao = (v: 'lista' | 'kanban') => {
     const p = new URLSearchParams(params);
@@ -44,10 +65,11 @@ export default function PortfolioPage() {
     setParams(p, { replace: true });
   };
 
-  const temFiltro = !!(busca || arena || origem || campanhaId || pendencia || arquivamento !== 'ATIVOS' || (visao === 'lista' && etapaId));
+  const temFiltro = !!(busca || arena || origem || campanhaId || pendencia || periodoDias || arquivamento !== 'ATIVOS' || (visao === 'lista' && etapaId));
   const limpar = () => {
     setBusca('');
     setArena('');
+    setPeriodoDias('');
     setEtapaId('');
     setOrigem('');
     setCampanhaId('');
@@ -160,6 +182,13 @@ export default function PortfolioPage() {
             {TAREFAS.map((t) => (
               <option key={t} value={t}>
                 {TAREFA_LABEL[t]}
+              </option>
+            ))}
+          </select>
+          <select className="input h-9 w-auto" value={periodoDias} onChange={(e) => mudar(setPeriodoDias)(Number(e.target.value) || '')} aria-label="Período de registro">
+            {PERIODOS_REGISTRO.map((p) => (
+              <option key={p.t} value={p.v}>
+                {p.t}
               </option>
             ))}
           </select>

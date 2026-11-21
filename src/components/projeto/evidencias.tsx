@@ -1,13 +1,84 @@
 import { FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import type { Evidencia } from '@/types/domain';
+import { Anexos, Campo, SeloSimulado } from '@/components/common/ui';
+import { evidenciaService } from '@/services';
+import type { Evidencia, ProjetoDetalhe } from '@/types/domain';
 import { formatarData, formatarTamanho } from '@/utils/formatters';
+
+import { FormularioConfirmado, nomesArquivos } from './formulario';
+
+// Anexar evidências ao projeto (envio simulado): JPEG/JPG, PDF ou Word até 10 MB cada.
+// Depois de anexadas, elas aparecem nos formulários de TRL, pedido de avanço, parecer e correção.
+export function AnexarEvidenciasModal({ projeto, aberto, onFechar, onFeito }: { projeto: ProjetoDetalhe; aberto: boolean; onFechar: () => void; onFeito: () => void }) {
+  const [arquivos, setArquivos] = useState<File[]>([]);
+  const [descricao, setDescricao] = useState('');
+  const [erro, setErro] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (aberto) {
+      setArquivos([]);
+      setDescricao('');
+      setErro(undefined);
+    }
+  }, [aberto]);
+
+  return (
+    <FormularioConfirmado
+      aberto={aberto}
+      onFechar={onFechar}
+      onAtualizar={onFeito}
+      titulo="Anexar evidências"
+      descricao={projeto.titulo}
+      validar={() => {
+        setErro(arquivos.length ? undefined : 'Escolha ao menos um arquivo.');
+        return arquivos.length > 0;
+      }}
+      resumo={() => [
+        ['Arquivos', nomesArquivos(arquivos)],
+        ['Descrição', descricao.trim() || '—'],
+      ]}
+      aviso="Envio simulado no protótipo: o arquivo não sai do seu computador, só o nome e o tamanho ficam registrados."
+      enviar={async () => {
+        const novas = await evidenciaService.anexar(projeto.id, arquivos, descricao);
+        return `${novas.length} evidência(s) anexada(s). Elas já podem ser selecionadas nos formulários do projeto.`;
+      }}
+      rotuloConfirmar="Anexar"
+    >
+      {({ falhou, enviando, limparFalha }) => (
+        <>
+          <p className="flex items-center gap-2 text-xs text-bb-muted">
+            <SeloSimulado texto="Envio simulado" /> Formatos aceitos: JPEG/JPG, PDF e Word (DOC/DOCX), até 10 MB por arquivo.
+          </p>
+          <Anexos
+            arquivos={arquivos}
+            onChange={(f) => {
+              setArquivos(f);
+              setErro(undefined);
+              limparFalha();
+            }}
+            erro={erro}
+            falhou={falhou}
+            enviando={enviando}
+          />
+          <Campo label="Descrição (opcional)" htmlFor="ev-desc" dica="Ex.: relatório de testes, ata da reunião, foto do protótipo.">
+            <input id="ev-desc" className="input" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+          </Campo>
+        </>
+      )}
+    </FormularioConfirmado>
+  );
+}
 
 // Seleção de evidências já vinculadas ao projeto (guia, seção 3): cada uma aparece uma única vez.
 // TRL e pedido de avanço exigem ao menos uma; no parecer a lista pode ficar vazia.
 export function SeletorEvidencias({ evidencias, valor, onChange, erro }: { evidencias: Evidencia[]; valor: number[]; onChange: (ids: number[]) => void; erro?: string }) {
   if (!evidencias.length)
-    return <p className="rounded-lg border border-dashed border-bb-line-2 bg-slate-50 p-3 text-sm text-bb-muted">Este projeto ainda não tem evidências vinculadas.</p>;
+    return (
+      <p className="rounded-lg border border-dashed border-bb-line-2 bg-slate-50 p-3 text-sm text-bb-muted">
+        Este projeto ainda não tem evidências. Anexe arquivos na aba <strong>Evidências</strong> do projeto e volte a este formulário.
+      </p>
+    );
   const alternar = (id: number) => onChange(valor.includes(id) ? valor.filter((x) => x !== id) : [...valor, id]);
   return (
     <div>

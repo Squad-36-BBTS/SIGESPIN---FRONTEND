@@ -27,7 +27,7 @@ O protótipo roda sozinho, sem back-end. Ficam simulados:
 - a API, com um banco no navegador que aplica as regras da Fase 3;
 - a sugestão de IA na nova demanda.
 
-As evidências são arquivos fictícios já vinculados aos projetos; os formulários as **selecionam**, como pede o guia.
+As evidências de demonstração já vêm vinculadas aos projetos (só JPEG/JPG, PDF e DOC/DOCX). Na aba **Evidências** dá para anexar novos arquivos (envio simulado, até 10 MB cada), que passam a aparecer nos formulários de TRL, pedido de avanço, parecer e correção.
 
 ---
 
@@ -69,7 +69,7 @@ A senha está em `src/services/mock/seed.ts`. Na tela de login, os botões de �
 | Especialista | João Prado | `joao.prado@bbts.com.br` | Dados e IA; mostra que só o destinatário responde a consulta |
 
 - **Trocar de usuário mantém os registros**, para um perfil continuar o trabalho do outro. Ao sair, a tela volta ao seletor.
-- **Restaurar dados:** em **Meu perfil** (ou na entrada simplificada, quando o zip 1 não está junto). A chave do banco no navegador é `@SIGES_PIN:mockdb:v5`.
+- **Restaurar dados:** em **Meu perfil** (ou na entrada simplificada, quando o zip 1 não está junto). A chave do banco no navegador é `@SIGES_PIN:mockdb:v6`.
 
 ---
 
@@ -336,7 +336,7 @@ As rotas da API ainda são **propostas** e ficam em `src/services/index.ts`; os 
 ## 8. Pontos em aberto
 
 1. As rotas definitivas da API da Fase 3 precisam ser confirmadas com o back-end.
-2. Como as evidências entram no projeto (upload) não está no guia; o protótipo usa evidências fictícias já vinculadas.
+2. Como as evidências entram no projeto (upload) não está no guia; o protótipo simula o envio na aba Evidências (JPEG/JPG, PDF, DOC/DOCX, até 10 MB) e a rota real `POST /projetos/{id}/evidencias` (multipart) precisa ser confirmada com o back-end.
 3. Quem cadastra ações de mobilização e como funciona o pedido de acesso (cadastro) ainda não foram definidos.
 4. Quais indicadores entram no dashboard.
 

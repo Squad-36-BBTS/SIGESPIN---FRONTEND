@@ -1,4 +1,4 @@
-import { MessagesSquare } from 'lucide-react';
+import { MessageSquareReply, MessagesSquare } from 'lucide-react';
 import { useMemo } from 'react';
 
 import type { ConsultaEspecialista } from '@/types/domain';
@@ -17,7 +17,8 @@ function ModalParecer({ projeto, aberto, alvo, onFechar, onFeito }: ModalProjeto
   return <ParecerModal alvo={dados} onFechar={onFechar} onFeito={onFeito} />;
 }
 
-// Especialista: emite parecer independente ou responde à consulta dirigida a ele (aba Consultas e pareceres)
+// Especialista: quando há consulta dirigida a ele, pode responder a ela ou emitir um parecer independente;
+// sem consulta, emite o parecer independente
 const acoes: AcaoProjeto[] = [
   {
     id: 'emitirParecer',
@@ -25,14 +26,18 @@ const acoes: AcaoProjeto[] = [
     botao: ({ p, usuario }) => {
       if (!visivelPara('emitirParecer', usuario.perfil)) return null;
       const paraMim = p.consultas.find((c) => podeResponderConsulta(c, usuario));
-      return {
-        perm: noProjeto('emitirParecer', usuario, p),
-        rotulo: paraMim ? 'Responder consulta' : 'Emitir parecer',
-        icon: <MessagesSquare className="h-4 w-4" />,
-        primaria: !!paraMim,
-        alvo: paraMim ?? null,
-      };
+      if (!paraMim) return null;
+      return { perm: noProjeto('emitirParecer', usuario, p), rotulo: 'Responder consulta', icon: <MessageSquareReply className="h-4 w-4" />, primaria: true, alvo: paraMim };
     },
+    Modal: ModalParecer,
+  },
+  {
+    id: 'emitirParecerIndependente',
+    ordem: 61,
+    botao: ({ p, usuario }) =>
+      visivelPara('emitirParecer', usuario.perfil)
+        ? { perm: noProjeto('emitirParecer', usuario, p), rotulo: 'Emitir parecer independente', icon: <MessagesSquare className="h-4 w-4" />, alvo: null }
+        : null,
     Modal: ModalParecer,
   },
 ];

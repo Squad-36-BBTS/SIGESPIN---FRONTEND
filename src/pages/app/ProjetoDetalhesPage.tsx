@@ -1,11 +1,11 @@
 // Tela compartilhada: vai em todos os zips, mas só o responsável altera. Responsável: Zip 4 · Especialista · Dados e IA.
-import { Archive, ArrowLeft, ArrowRight, Check, Download, FileText, Gavel, History, Lightbulb, MessagesSquare, UserRound, UserRoundX } from 'lucide-react';
+import { Archive, ArrowLeft, ArrowRight, Check, Download, FileText, Gavel, History, Lightbulb, MessagesSquare, Paperclip, UserRound, UserRoundX } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ArenaBadge, BotaoAcao, EtapaBadge, Erro, OrigemBadge, Selo, Skeleton, TarefaBadge, TrlBadge, Vazio } from '@/components/common/ui';
-import { ListaEvidencias } from '@/components/projeto/evidencias';
+import { AnexarEvidenciasModal, ListaEvidencias } from '@/components/projeto/evidencias';
 import { RadarChart } from '@/components/radar/RadarChart';
 import { TrlRegua } from '@/components/trl/TrlRegua';
 import { ACOES_PROJETO, temAcao } from '@/fluxos/projeto';
@@ -59,6 +59,7 @@ export default function ProjetoDetalhesPage() {
   // Formulário aberto: id da ação do fluxo + o dado que ela recebe (consulta, entrega, pedido…)
   const [aberta, setAberta] = useState<{ id: string; alvo?: unknown } | null>(null);
   const abrir = (id: string, alvo?: unknown) => setAberta({ id, alvo });
+  const [anexando, setAnexando] = useState(false);
 
   const irAba = (a: Aba) => {
     const n = new URLSearchParams(params);
@@ -219,7 +220,7 @@ export default function ProjetoDetalhesPage() {
         {aba === 'kanban' && <KanbanAba p={p} usuario={usuario} onDecidir={(s, d) => abrir('decidirAvanco', { s, d })} onCancelar={(s) => abrir('cancelarAvanco', s)} />}
         {aba === 'entregas' && <Entregas p={p} usuario={usuario} onValidar={(e) => abrir('validarEntrega', e)} />}
         {aba === 'correcoes' && <Correcoes p={p} />}
-        {aba === 'evidencias' && <Evidencias p={p} />}
+        {aba === 'evidencias' && <Evidencias p={p} usuario={usuario} onAnexar={() => setAnexando(true)} />}
         {aba === 'participacao' && <Participacao p={p} usuario={usuario} onEnviado={recarregar} />}
         {aba === 'historico' && <Historico p={p} />}
       </div>
@@ -227,6 +228,7 @@ export default function ProjetoDetalhesPage() {
       {ACOES_PROJETO.map(
         (a) => a.Modal && <a.Modal key={a.id} projeto={p} aberto={aberta?.id === a.id} alvo={aberta?.id === a.id ? aberta.alvo ?? null : null} onFechar={fechar} onFeito={recarregar} />,
       )}
+      <AnexarEvidenciasModal projeto={p} aberto={anexando} onFechar={() => setAnexando(false)} onFeito={recarregar} />
     </div>
   );
 }
@@ -704,9 +706,17 @@ function Correcoes({ p }: { p: ProjetoDetalhe }) {
   );
 }
 
-function Evidencias({ p }: { p: ProjetoDetalhe }) {
-  if (!p.evidencias.length) return <Vazio titulo="Nenhuma evidência" texto="As evidências do projeto são selecionadas nos registros de TRL, pareceres, pedidos de avanço e correções." />;
+function Evidencias({ p, usuario, onAnexar }: { p: ProjetoDetalhe; usuario: Usuario; onAnexar: () => void }) {
+  const perm = noProjeto('anexarEvidencia', usuario, p);
+  const anexar = <BotaoAcao permissao={perm} onClick={onAnexar} icon={<Paperclip className="h-4 w-4" />} variante="primario">Anexar evidências</BotaoAcao>;
+  if (!p.evidencias.length)
+    return <Vazio titulo="Nenhuma evidência" texto="Anexe arquivos JPEG/JPG, PDF ou Word (até 10 MB) para usá-los nos registros de TRL, pareceres, pedidos de avanço e correções." acao={anexar} />;
   return (
+    <div className="space-y-3">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <p className="text-xs text-bb-muted">As evidências anexadas aqui ficam disponíveis nos formulários de TRL, pedido de avanço, parecer e correção.</p>
+      {anexar}
+    </div>
     <div className="card overflow-hidden">
       <div className="scroll-fino overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
@@ -746,6 +756,7 @@ function Evidencias({ p }: { p: ProjetoDetalhe }) {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

@@ -175,8 +175,8 @@ const RADAR: AvaliacaoRadar[] = [
 ];
 
 const PDF = 'application/pdf';
-const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const JPG = 'image/jpeg';
 const ev = (id: number, projetoId: number, nome: string, tipo: string, tam: number, dias: number, por: number, descricao: string): Evidencia => ({
   id,
   projetoId,
@@ -194,19 +194,19 @@ const EVIDENCIAS: Evidencia[] = [
   ev(1, 2, 'Relatorio_Testes_Bancada_TRL4.pdf', PDF, 4400000, 40, 2, 'Relatório dos testes em bancada'),
   ev(2, 2, 'Plano_Piloto_25_Agencias.pdf', PDF, 1200000, 3, 2, 'Plano do piloto'),
   ev(3, 7, 'Metricas_Piloto_Biometria.pdf', PDF, 2800000, 10, 2, 'Métricas do piloto'),
-  ev(4, 3, 'Consumo_Agencias_Piloto.xlsx', XLSX, 640000, 1, 2, 'Planilha de consumo'),
+  ev(4, 3, 'Consumo_Agencias_Piloto.pdf', PDF, 640000, 1, 2, 'Relatório de consumo'),
   ev(5, 7, 'Painel_Score_Risco_v1.pdf', PDF, 1500000, 12, 2, 'Apresentação do painel'),
   ev(6, 1, 'Fluxo_Atual_Conferencia.pdf', PDF, 900000, 19, 1, 'Fluxo atual do processo'),
   ev(7, 5, 'Analise_Viabilidade_Ledger.pdf', PDF, 2100000, 4, 2, 'Análise de viabilidade'),
   ev(8, 10, 'Relatorio_Sandbox_Rede.pdf', PDF, 3200000, 20, 2, 'Relatório dos testes em sandbox'),
   ev(9, 2, 'Analise_Superficie_Ataque.pdf', PDF, 760000, 42, 7, 'Análise de superfície de ataque'),
-  ev(10, 10, 'Telemetria_Rede_Anonimizada.csv', 'text/csv', 5200000, 15, 2, 'Amostra de telemetria'),
-  ev(11, 4, 'Mapeamento_Normas_Internas.pptx', PPTX, 2300000, 25, 2, 'Apresentação do mapeamento'),
-  ev(12, 1, 'Amostra_Documentos_Anonimizada.zip', 'application/zip', 8100000, 18, 1, 'Amostra de documentos'),
-  ev(13, 8, 'Serie_Historica_Numerario.xlsx', XLSX, 1900000, 400, 2, 'Série histórica de abastecimento'),
-  ev(14, 12, 'Apresentacao_Gemeo_Digital.pptx', PPTX, 3600000, 2, 6, 'Apresentação da ideia'),
-  ev(15, 3, 'Apresentacao_Resultados_Piloto.pptx', PPTX, 4100000, 14, 2, 'Resultados do piloto'),
-  ev(16, 11, 'Mapa_Competencias.xlsx', XLSX, 520000, 6, 1, 'Mapa de competências'),
+  ev(10, 10, 'Telemetria_Rede_Anonimizada.pdf', PDF, 5200000, 15, 2, 'Relatório de telemetria'),
+  ev(11, 4, 'Mapeamento_Normas_Internas.docx', DOCX, 2300000, 25, 2, 'Documento do mapeamento'),
+  ev(12, 1, 'Amostra_Documento_Digitalizado.jpg', JPG, 1800000, 18, 1, 'Foto de um documento anonimizado'),
+  ev(13, 8, 'Serie_Historica_Numerario.pdf', PDF, 1900000, 400, 2, 'Série histórica de abastecimento'),
+  ev(14, 12, 'Maquete_Gemeo_Digital.jpg', JPG, 3600000, 2, 6, 'Imagem da maquete'),
+  ev(15, 3, 'Resultados_Piloto.pdf', PDF, 4100000, 14, 2, 'Resultados do piloto'),
+  ev(16, 11, 'Mapa_Competencias.docx', DOCX, 520000, 6, 1, 'Mapa de competências'),
   ev(17, 6, 'Relatorio_Operacao_Agentes.pdf', PDF, 2600000, 33, 2, 'Relatório de operação'),
   ev(18, 9, 'Comparativo_Contrato_Vigente.pdf', PDF, 880000, 72, 2, 'Comparativo com o contrato vigente'),
 ];
@@ -258,6 +258,31 @@ const QUALIFICACOES: Qualificacao[] = [
     conclusao: 'Seguir para POC.',
     criadaEm: d(160),
   },
+  // Projetos que já passaram da triagem: sem qualificação, voltariam para “Aguardando triagem”
+  ...(
+    [
+      [4, 3, 'Eficiência operacional, com ganho direto de custo.', 'Telemetria e sensores maduros no mercado.', 'Seguir para POC em agências piloto.', 290],
+      [5, 4, 'Negócios digitais: reduz o tempo de atendimento.', 'Busca semântica madura; integração com as normas a validar.', 'Seguir para POC com a área de atendimento.', 110],
+      [6, 6, 'Eficiência operacional no backoffice.', 'Automação com agentes já usada em outras empresas.', 'Seguir para POC com supervisão humana.', 300],
+      [7, 7, 'Segurança integrada: fraude em canais digitais.', 'Biometria comportamental em uso no mercado financeiro.', 'Seguir para POC com a equipe antifraude.', 170],
+      [8, 9, 'Negócios digitais, com sobreposição a contrato existente.', 'Portal de autoatendimento sem barreira técnica.', 'Avaliar sobreposição com a área de compras antes de seguir.', 85],
+      [9, 10, 'Segurança integrada: ameaças internas.', 'Detecção de anomalias madura; telemetria a integrar.', 'Seguir para POC em sandbox.', 140],
+    ] as const
+  ).map(
+    ([id, projetoId, aderencia, maturidade, conclusao, dias]): Qualificacao => ({
+      id,
+      projetoId,
+      analista: u(2),
+      aderenciaTese: aderencia,
+      relevancia: 'Alta para a área demandante.',
+      grauInovacao: 'Incremental a moderado no contexto da BBTS.',
+      viabilidade: 'Viável com os recursos atuais.',
+      maturidadeTecnologica: maturidade,
+      fundamentacao: 'Dor recorrente, solução plausível e área demandante engajada.',
+      conclusao,
+      criadaEm: d(dias),
+    }),
+  ),
 ];
 
 const CONSULTAS: ConsultaEspecialista[] = [

@@ -23,6 +23,7 @@ export type AcaoId =
   | 'recomendarDemanda'
   | 'responderRecomendacao'
   | 'gerirProjeto'
+  | 'anexarEvidencia'
   | 'comentar';
 
 export interface Permissao {
@@ -51,6 +52,8 @@ const MATRIZ: Record<AcaoId, Record<PerfilUsuario, string | null>> = {
   recomendarDemanda: { DEMANDANTE: null, ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
   responderRecomendacao: { DEMANDANTE: 'Somente destinatário', ANALISTA: null, ESPECIALISTA: null },
   gerirProjeto: { DEMANDANTE: null, ANALISTA: null, ESPECIALISTA: 'Sim' },
+  // Recurso do protótipo (envio simulado): permite percorrer a jornada de uma demanda recém-criada
+  anexarEvidencia: { DEMANDANTE: 'Responsável pelo projeto', ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
   comentar: { DEMANDANTE: 'Responsável pelo projeto', ANALISTA: 'Sim', ESPECIALISTA: 'Sim' },
 };
 
@@ -74,6 +77,7 @@ export const ACAO_LABEL: Record<AcaoId, string> = {
   recomendarDemanda: 'Recomendar demanda',
   responderRecomendacao: 'Converter ou recusar recomendação',
   gerirProjeto: 'Editar, arquivar e reativar projeto',
+  anexarEvidencia: 'Anexar evidências ao projeto',
   comentar: 'Participar da conversa do projeto',
 };
 
@@ -98,6 +102,7 @@ export const ACAO_CONDICAO: Record<AcaoId, string> = {
   recomendarDemanda: 'Destinatário ativo com perfil Demandante',
   responderRecomendacao: 'Recomendação pendente',
   gerirProjeto: 'Versão vigente e justificativa',
+  anexarEvidencia: 'Projeto ativo; JPEG/JPG, PDF ou Word até 10 MB (envio simulado)',
   comentar: 'Projeto ativo',
 };
 
@@ -122,6 +127,7 @@ export const ACOES_MATRIZ: AcaoId[] = [
   'recomendarDemanda',
   'responderRecomendacao',
   'gerirProjeto',
+  'anexarEvidencia',
 ];
 
 export function valorMatriz(acao: AcaoId, perfil: PerfilUsuario): string | null {
@@ -148,6 +154,7 @@ const QUEM: Record<AcaoId, string> = {
   recomendarDemanda: 'ao Analista e ao Especialista',
   responderRecomendacao: 'ao Demandante destinatário',
   gerirProjeto: 'ao Especialista',
+  anexarEvidencia: 'à equipe e ao Demandante responsável',
   comentar: 'à equipe e ao Demandante responsável',
 };
 
@@ -171,6 +178,7 @@ const EXIGEM_ATIVO: AcaoId[] = [
   'submeterEntrega',
   'validarEntrega',
   'registrarCorrecao',
+  'anexarEvidencia',
   'comentar',
 ];
 
@@ -184,6 +192,7 @@ export function noProjeto(acao: AcaoId, u: Usuario | null, p: Projeto, extra: { 
   if ((acao === 'validarEntrega' || acao === 'registrarCorrecao') && p.demandante?.id !== u.id)
     return negado(p.demandante ? `Somente ${p.demandante.nome}, Demandante responsável pelo projeto, pode fazer isso.` : 'O projeto ainda não tem Demandante responsável.');
   if (acao === 'comentar' && u.perfil === 'DEMANDANTE' && p.demandante?.id !== u.id) return negado('Somente o Demandante responsável participa da conversa.');
+  if (acao === 'anexarEvidencia' && u.perfil === 'DEMANDANTE' && p.demandante?.id !== u.id) return negado('Somente o Demandante responsável anexa evidências a este projeto.');
   return PERMITIDO;
 }
 

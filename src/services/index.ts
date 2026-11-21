@@ -18,6 +18,7 @@ import type {
   EdicaoProjetoRequest,
   EdicaoTransicaoRequest,
   EntregaRequest,
+  Evidencia,
   FiltroDashboard,
   FiltroPortfolio,
   Interacao,
@@ -204,6 +205,17 @@ export const entregaService = {
   async registrarCorrecao(projetoId: number, req: CorrecaoRequest): Promise<void> {
     if (USE_MOCK) return mock.registrarCorrecao(projetoId, req);
     await api.post(`/projetos/${projetoId}/correcoes`, req);
+  },
+};
+
+export const evidenciaService = {
+  // Envio simulado no protótipo; com o back-end, vai como multipart (arquivos + descrição)
+  async anexar(projetoId: number, arquivos: File[], descricao: string): Promise<Evidencia[]> {
+    if (USE_MOCK) return mock.anexarEvidencias(projetoId, arquivos, descricao);
+    const form = new FormData();
+    arquivos.forEach((f) => form.append('arquivos', f));
+    form.append('descricao', descricao);
+    return (await api.post(`/projetos/${projetoId}/evidencias`, form)).data;
   },
 };
 

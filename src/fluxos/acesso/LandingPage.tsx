@@ -267,19 +267,19 @@ function Fluxo() {
       img: IMAGENS.analise,
       icon: Upload,
       t: 'Triagem e qualificação',
-      d: 'O Analista de Inovação avalia aderência à Tese, relevância, grau de inovação, viabilidade e TRL, e consulta especialistas quando precisa.',
+      d: 'O Analista de Inovação avalia aderência à Tese, relevância, grau de inovação, viabilidade e maturidade, e consulta Especialistas quando precisa. Analista e Especialista registram avaliações de TRL.',
     },
     {
       img: IMAGENS.comite,
       icon: ClipboardCheck,
       t: 'Governança nas transições',
-      d: 'Cada transição do Kanban indica se exige governança. Quando exige, o Analista solicita e um Especialista aprova ou rejeita.',
+      d: 'Cada percurso do Kanban indica se exige governança. Quando exige, o Analista solicita e um Especialista aprova ou rejeita; o Especialista também pode mover direto, com justificativa e notificação para todos.',
     },
     {
       img: IMAGENS.acompanhamento,
       icon: BarChart3,
       t: 'Experimentação e validação',
-      d: 'O Analista publica entregas e MVPs; o demandante, dono do problema, valida. A validação não muda o Kanban sozinha.',
+      d: 'Analista e Especialista submetem entregas e MVPs; o Demandante responsável valida. A validação não muda o Kanban sozinha.',
     },
   ];
   return (
@@ -336,8 +336,8 @@ function Perfis() {
             <span>Parecer e decisão são ações diferentes.</span>
           </h2>
           <p className="text-lg text-white/70" data-reveal>
-            Todos consultam o portfólio inteiro. O Especialista emite pareceres técnicos e decide as transições que exigem governança;
-            o Analista conduz a jornada; o Demandante registra e valida.
+            Todos consultam o portfólio inteiro, inclusive o dispêndio estimado. O Especialista emite pareceres técnicos, decide e pode mover
+            diretamente os percursos governados; o Analista conduz a jornada; o Demandante registra e valida.
           </p>
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-3">
@@ -390,7 +390,7 @@ function Maturidade() {
                 </div>
               ))}
             </div>
-            <p className="mt-5 text-sm text-bb-muted">O TRL é um indicador: o Analista o atualiza a partir das evidências e dos resultados.</p>
+            <p className="mt-5 text-sm text-bb-muted">O TRL é um indicador: Analista e Especialista o atualizam a partir das evidências e dos resultados.</p>
           </article>
 
           <article className="card p-6" data-reveal>
@@ -405,7 +405,7 @@ function Maturidade() {
               ))}
             </div>
             <p className="mt-5 text-sm text-bb-muted">
-              Etapas iniciais, configuráveis. Na configuração inicial, toda transição exige decisão de governança.
+              Etapas iniciais, configuráveis. Na configuração inicial, todo percurso é governado: o Analista pede o avanço e o Especialista decide ou move direto, com justificativa.
             </p>
           </article>
 
@@ -429,7 +429,7 @@ function Maturidade() {
 
         <div className="mt-5 grid gap-5 rounded-panel bg-white p-6 shadow-card ring-1 ring-bb-line md:grid-cols-3" data-reveal>
           {[
-            { icon: Lock, t: 'Dados sensíveis protegidos', d: 'Dados financeiros só serão exibidos depois que a política de acesso for definida.' },
+            { icon: Lock, t: 'Transparência com responsabilidade', d: 'O dispêndio estimado fica visível para todos os perfis autenticados; só o Especialista edita.' },
             { icon: History, t: 'Histórico imutável', d: 'Qualificações, pareceres, avaliações, decisões e validações ficam com autoria e data.' },
             { icon: ClipboardCheck, t: 'Pareceres técnicos', d: 'Especialistas subsidiam a qualificação e as decisões quando é preciso conhecimento específico.' },
           ].map((x) => (
@@ -461,15 +461,15 @@ function Duvidas() {
     },
     {
       q: 'Todo avanço precisa de aprovação?',
-      a: 'Depende da configuração do Kanban: cada transição indica se exige governança. Na configuração inicial, todas exigem a decisão de um Especialista.',
+      a: 'Depende da configuração do Kanban: cada percurso indica se exige governança. Nos governados, o Analista pede o avanço e um Especialista decide; o Especialista também pode mover direto, com justificativa, e todos recebem uma notificação.',
     },
     {
       q: 'Qual é o papel do demandante depois do cadastro?',
-      a: 'Ele é o dono do problema: responde dúvidas, adiciona contexto durante a evolução e valida as entregas e os MVPs. A validação fica registrada, sem mudar o Kanban automaticamente.',
+      a: 'Ele é o dono do problema: responde dúvidas, adiciona contexto, registra correções e valida as entregas e os MVPs submetidos pelo Analista ou pelo Especialista. A validação fica registrada, sem mudar o Kanban automaticamente.',
     },
     {
       q: 'Quem vê os valores financeiros?',
-      a: 'A política de exibição de dados financeiros ainda não foi definida; por isso, o protótipo não exibe o dispêndio estimado.',
+      a: 'Todos os perfis autenticados visualizam o dispêndio estimado no detalhe do projeto. Só o Especialista pode alterá-lo, com justificativa registrada no histórico de gestão.',
     },
     {
       q: 'Como consigo acesso?',

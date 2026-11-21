@@ -153,8 +153,11 @@ export function ResumoConfirmacao({ titulo = 'Confira antes de confirmar', itens
   );
 }
 
-const TAMANHO_MAX = 10 * 1024 * 1024;
-const ACEITOS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'json', 'csv', 'zip', 'txt'];
+// Formatos aprovados para evidências: JPEG/JPG, PDF e Word (DOC/DOCX), até 10 MB por arquivo
+export const TAMANHO_MAX_EVIDENCIA = 10 * 1024 * 1024;
+export const FORMATOS_EVIDENCIA = ['jpg', 'jpeg', 'pdf', 'doc', 'docx'];
+const TAMANHO_MAX = TAMANHO_MAX_EVIDENCIA;
+const ACEITOS = FORMATOS_EVIDENCIA;
 
 // Anexos com validação de tipo e tamanho e estado de envio por arquivo.
 // "falhou" marca o arquivo que não foi enviado; o usuário pode removê-lo ou tentar de novo.
@@ -179,8 +182,8 @@ export function Anexos({
     const novos: File[] = [];
     for (const f of Array.from(lista)) {
       const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
-      if (!ACEITOS.includes(ext)) toast.error(`${f.name}: formato não aceito.`);
-      else if (f.size > TAMANHO_MAX) toast.error(`${f.name} passa de 10 MB.`);
+      if (!ACEITOS.includes(ext)) toast.error(`${f.name} foi recusado: o formato .${ext || '?'} não é aceito. Use JPEG/JPG, PDF ou Word (DOC/DOCX).`);
+      else if (f.size > TAMANHO_MAX) toast.error(`${f.name} foi recusado: tem ${formatarTamanho(f.size)} e o limite é 10 MB por arquivo.`);
       else if (!arquivos.some((a) => a.name === f.name && a.size === f.size)) novos.push(f);
     }
     onChange([...arquivos, ...novos]);
@@ -225,7 +228,7 @@ export function Anexos({
       >
         <FileUp className="h-6 w-6 text-bb-blue" />
         <p className="mt-1.5 text-sm font-semibold">Clique para anexar ou arraste os arquivos aqui</p>
-        <p className="text-xs text-bb-muted">PDF, Office, imagens, JSON, CSV, TXT ou ZIP · até 10 MB cada</p>
+        <p className="text-xs text-bb-muted">JPEG/JPG, PDF ou Word (DOC/DOCX) · até 10 MB cada</p>
         <input ref={input} type="file" multiple accept={ACEITOS.map((x) => '.' + x).join(',')} className="hidden" onChange={(e) => adicionar(e.target.files)} />
       </div>
       {erro && <p className="mt-1 text-xs font-semibold text-rose-600">{erro}</p>}

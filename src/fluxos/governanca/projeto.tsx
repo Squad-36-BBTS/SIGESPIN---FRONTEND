@@ -1,7 +1,7 @@
 import { Ban, Gavel } from 'lucide-react';
 
 import type { DecisaoRequest, SolicitacaoTransicao } from '@/types/domain';
-import { negado, podeCancelar, porPerfil, solicitanteDe, visivelPara } from '@/utils/permissoes';
+import { podeCancelar, porPerfil, solicitanteDe, visivelPara } from '@/utils/permissoes';
 
 import type { AcaoProjeto, ModalProjetoProps } from '../tipos';
 import { CancelamentoModal } from './CancelamentoModal';
@@ -24,14 +24,15 @@ const acoes: AcaoProjeto[] = [
   {
     id: 'decidirAvanco',
     ordem: 70,
+    // Só aparece quando há pedido pendente, para não deixar um botão desabilitado sem uso na barra
     botao: ({ usuario, pendente }) => {
-      if (!visivelPara('decidirAvanco', usuario.perfil)) return null;
+      if (!visivelPara('decidirAvanco', usuario.perfil) || !pendente) return null;
       return {
-        perm: pendente ? porPerfil('decidirAvanco', usuario) : negado('Não há pedido de avanço pendente.'),
+        perm: porPerfil('decidirAvanco', usuario),
         rotulo: 'Decidir avanço',
         icon: <Gavel className="h-4 w-4" />,
-        primaria: !!pendente,
-        alvo: pendente && { s: pendente, d: 'APROVAR' },
+        primaria: true,
+        alvo: { s: pendente, d: 'APROVAR' },
       };
     },
     Modal: ModalDecisao,

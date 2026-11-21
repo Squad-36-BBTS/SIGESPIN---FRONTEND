@@ -31,7 +31,7 @@ O site foi atualizado para o [guia de regras de negócio da Fase 3](GUIA_REGRAS_
 | `src/utils/formatters.ts` | Valores em reais com centavos (dispêndio estimado). |
 | `src/utils/notificacoes.ts` | Novo: conta notificações não lidas por usuário. |
 | `src/services/index.ts` | Serviços novos e revistos: usuários por perfil, quadro com versão, propostas, movimentação direta e pedido de avanço, cancelamento, parecer, correção, recomendações, notificações, edição e arquivamento do projeto. |
-| `src/services/mock/mockServer.ts` | Banco simulado com todas as regras do guia, conferidas de novo em cada operação. Chave nova no navegador: @SIGES_PIN:mockdb:v5. |
+| `src/services/mock/mockServer.ts` | Banco simulado com todas as regras do guia, conferidas de novo em cada operação. Chave nova no navegador: @SIGES_PIN:mockdb:v6. |
 | `src/services/mock/seed.ts` | Dados da seção 4 do guia: 2 Demandantes, 1 Analista, 2 Especialistas, evidências por projeto, projeto arquivado, projeto legado sem Demandante, recomendação e pedidos pendentes, percurso livre POC → Ideação e proposta de coluna pendente. |
 | `src/components/projeto/evidencias.tsx` | Novo: seleção de evidências do projeto (várias ou uma) e lista compacta. |
 | `src/components/projeto/formulario.tsx` | Opção aoConflitar: em conflito de versão, o formulário continua aberto com o rascunho. |
@@ -136,3 +136,14 @@ Branch `especialista-dados-e-ia` · login de teste: João Prado (Especialista ·
 3. Fernanda arquiva um projeto sem pedido pendente: o aviso aparece e as ações ficam bloqueadas; depois reativa.
 4. Em “Visão computacional no autoatendimento”, arquivar fica bloqueado porque há pedido pendente.
 5. Depois de uma aprovação, Notificações mostra a mensagem com o projeto, e o contador do menu some ao abrir a lista.
+
+## Correções da revisão
+
+- **Filtros do dashboard preservados:** período, origem e etapa seguem para o portfólio ao clicar num indicador; o portfólio ganhou o filtro de período e guarda os filtros na URL.
+- **Triagem:** a demanda fica em “Aguardando triagem” até ter qualificação, mesmo com Analista atribuído (dashboard e Minha fila usam a mesma regra).
+- **Parecer:** com consulta dirigida a ele, o Especialista escolhe entre “Responder consulta” e “Emitir parecer independente”.
+- **Anexo de evidências (simulado):** aba Evidências → “Anexar evidências”; aceita JPEG/JPG, PDF e DOC/DOCX até 10 MB, com mensagens claras de recusa; os arquivos entram nos formulários de TRL, governança, parecer e correção. Evidências de demonstração convertidas para os formatos aprovados.
+- **Textos públicos:** landing, FAQ e descrições de perfil atualizados (dispêndio visível a todos os perfis autenticados; Analista e Especialista registram TRL e submetem entregas; Especialista movimenta percursos governados com justificativa e notificação global).
+- **Atualizados recentemente:** segue os filtros do dashboard e diz isso na tela.
+- Ajustes menores: “Decidir avanço” só aparece com pedido pendente; contador de notificações zera ao abrir a lista.
+- Chave do banco simulado: `@SIGES_PIN:mockdb:v6`.

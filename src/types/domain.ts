@@ -540,6 +540,7 @@ export interface FiltroPortfolio {
   campanhaId?: number | '';
   pendencia?: EstadoTarefa | '';
   arquivamento?: FiltroArquivamento; // padrão: ATIVOS
+  periodoDias?: number | ''; // pela data de registro, como no dashboard
   pagina?: number;
   tamanho?: number;
 }
